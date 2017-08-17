@@ -15,7 +15,7 @@ dist: trusty
 cache: yarn
 
 before_install:
-  - git clone --depth=1 https://github.com/discourse/discourse.git build ; cd build; rm -rf plugins/*
+  - git clone --depth=1 https://github.com/discourse/discourse.git build; cd build;
   - gem install bundler rubocop
   - git clone --depth=1 -b $TRAVIS_BRANCH https://github.com/$TRAVIS_REPO_SLUG.git plugins/discourse-prometheus-alert-receiver
   - yarn global add eslint babel-eslint
@@ -29,4 +29,4 @@ install:
   - bundle install --without development --deployment --retry=3 --jobs=3
 
 script:
-  - LOAD_PLUGINS=1 bundle exec rake plugin:spec
+  - LOAD_PLUGINS=1 bundle exec rake plugin:spec['discourse-prometheus-alert-receiver']

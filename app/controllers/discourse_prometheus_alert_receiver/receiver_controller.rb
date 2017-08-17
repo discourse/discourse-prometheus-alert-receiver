@@ -17,7 +17,7 @@ module DiscoursePrometheusAlertReceiver
       )
 
       if category.save
-        url = "#{Discourse.base_url}/prometheus-alertmanager/receiver/#{token}"
+        url = "#{Discourse.base_url}/prometheus/receiver/#{token}"
 
         render json: success_json.merge(url: url)
       else

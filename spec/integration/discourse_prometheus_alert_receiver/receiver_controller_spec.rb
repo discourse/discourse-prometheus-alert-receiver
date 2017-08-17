@@ -8,7 +8,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
     describe 'as an anonymous user' do
       it 'should return the right response' do
         expect do
-          xhr :post, "/prometheus-alertmanager/receiver/generate"
+          xhr :post, "/prometheus/receiver/generate"
         end.to raise_error(ActionController::RoutingError)
       end
     end
@@ -20,7 +20,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
       it 'should return the right response' do
         expect do
-          xhr :post, "/prometheus-alertmanager/receiver/generate"
+          xhr :post, "/prometheus/receiver/generate"
         end.to raise_error(ActionController::RoutingError)
       end
     end
@@ -33,7 +33,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
       describe 'when category_id param is not given' do
         it 'should raise the right error' do
           expect do
-            xhr :post, "/prometheus-alertmanager/receiver/generate"
+            xhr :post, "/prometheus/receiver/generate"
           end.to raise_error(ActionController::ParameterMissing)
         end
       end
@@ -42,7 +42,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         freeze_time do
           category = Fabricate(:category)
 
-          xhr :post, "/prometheus-alertmanager/receiver/generate", category_id: category.id
+          xhr :post, "/prometheus/receiver/generate", category_id: category.id
 
           expect(response).to be_success
 
@@ -50,7 +50,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           receiver = PluginStoreRow.last
 
           expect(body['success']).to eq('OK')
-          expect(body['url']).to eq("#{Discourse.base_url}/prometheus-alertmanager/receiver/#{receiver.key}")
+          expect(body['url']).to eq("#{Discourse.base_url}/prometheus/receiver/#{receiver.key}")
 
           expect(receiver.value).to eq({
             category_id: category.id,
@@ -66,11 +66,11 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
     describe 'when token is missing or too short' do
       it 'should raise the right error' do
         expect do
-          post "/prometheus-alertmanager/receiver/"
+          post "/prometheus/receiver/"
         end.to raise_error(ActionController::RoutingError)
 
         expect do
-          post "/prometheus-alertmanager/receiver/asdsa"
+          post "/prometheus/receiver/asdsa"
         end.to raise_error(ActionController::RoutingError)
       end
     end
@@ -78,7 +78,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
     describe 'when token is invalid' do
       it 'should raise the right error' do
         expect do
-          post "/prometheus-alertmanager/receiver/557fa3ef557b49451dc9e90e6a7ec1e888937983bee016f5ea52310bd4721983"
+          post "/prometheus/receiver/557fa3ef557b49451dc9e90e6a7ec1e888937983bee016f5ea52310bd4721983"
         end.to raise_error(Discourse::InvalidParameters)
       end
     end
@@ -108,7 +108,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
       describe 'when a new alert is received' do
         it 'should create the right topic' do
           freeze_time(Time.zone.local(2017, 8, 11)) do
-            xhr :post, "/prometheus-alertmanager/receiver/#{token}", payload
+            xhr :post, "/prometheus/receiver/#{token}", payload
 
             expect(response).to be_success
 
@@ -126,7 +126,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             expect(topic_id).to eq(topic.id)
 
             expect do
-              xhr :post, "/prometheus-alertmanager/receiver/#{token}", payload
+              xhr :post, "/prometheus/receiver/#{token}", payload
             end.to_not change { Topic.count }
 
             expect(response).to be_success

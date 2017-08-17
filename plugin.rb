@@ -31,6 +31,6 @@ after_initialize do
   end
 
   Discourse::Application.routes.append do
-    mount ::DiscoursePrometheusAlertReceiver::Engine, at: "/prometheus-alertmanager"
+    mount ::DiscoursePrometheusAlertReceiver::Engine, at: "/prometheus"
   end
 end

@@ -98,6 +98,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
       end
 
       before do
+        SiteSetting.login_required = true
+
         PluginStore.set(::DiscoursePrometheusAlertReceiver::PLUGIN_NAME, token,
           category_id: category.id,
           created_at: Time.zone.now,

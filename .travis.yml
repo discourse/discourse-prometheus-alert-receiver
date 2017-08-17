@@ -16,7 +16,7 @@ cache: yarn
 
 before_install:
   - git clone --depth=1 https://github.com/discourse/discourse.git build ; cd build; rm -rf plugins/*
-  - gem install bundler
+  - gem install bundler rubocop
   - git clone --depth=1 -b $TRAVIS_BRANCH https://github.com/$TRAVIS_REPO_SLUG.git plugins/discourse-prometheus-alert-receiver
   - yarn global add eslint babel-eslint
   - eslint --ext .es6 plugins/**/assets/javascripts

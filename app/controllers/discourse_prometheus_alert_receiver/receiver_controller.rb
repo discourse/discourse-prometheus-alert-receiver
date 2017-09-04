@@ -1,6 +1,6 @@
 module DiscoursePrometheusAlertReceiver
   class ReceiverController < ApplicationController
-    skip_before_filter :check_xhr,
+    skip_before_action :check_xhr,
                        :verify_authenticity_token,
                        :redirect_to_login_if_required,
                        only: [:receive]

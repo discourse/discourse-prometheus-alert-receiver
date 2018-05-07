@@ -6,10 +6,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
   describe "#generate_receiver_url" do
     describe 'as an anonymous user' do
-      it 'should return the right response' do
-        expect do
-          post "/prometheus/receiver/generate"
-        end.to raise_error(ActionController::RoutingError)
+      it "should pretend we don't exist" do
+        post "/prometheus/receiver/generate"
+        expect(response.status).to eq(404)
       end
     end
 
@@ -18,10 +17,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         sign_in(Fabricate(:user))
       end
 
-      it 'should return the right response' do
-        expect do
-          post "/prometheus/receiver/generate"
-        end.to raise_error(ActionController::RoutingError)
+      it "should pretend we don't exist" do
+        post "/prometheus/receiver/generate"
+        expect(response.status).to eq(404)
       end
     end
 
@@ -31,10 +29,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
       end
 
       describe 'when category_id param is not given' do
-        it 'should raise the right error' do
-          expect do
-            post "/prometheus/receiver/generate.json"
-          end.to raise_error(ActionController::ParameterMissing)
+        it "should respond with a bad request error" do
+          post "/prometheus/receiver/generate.json"
+          expect(response.status).to eq(400)
         end
       end
 
@@ -64,22 +61,19 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
   describe "#receive" do
     describe 'when token is missing or too short' do
-      it 'should raise the right error' do
-        expect do
-          post "/prometheus/receiver/"
-        end.to raise_error(ActionController::RoutingError)
+      it "should indicate the resource wasn't found" do
+        post "/prometheus/receiver/"
+        expect(response.status).to eq(404)
 
-        expect do
-          post "/prometheus/receiver/asdsa"
-        end.to raise_error(ActionController::RoutingError)
+        post "/prometheus/receiver/asdsa"
+        expect(response.status).to eq(404)
       end
     end
 
     describe 'when token is invalid' do
-      it 'should raise the right error' do
-        expect do
-          post "/prometheus/receiver/557fa3ef557b49451dc9e90e6a7ec1e888937983bee016f5ea52310bd4721983"
-        end.to raise_error(Discourse::InvalidParameters)
+      it "should indicate the request was bad" do
+        post "/prometheus/receiver/557fa3ef557b49451dc9e90e6a7ec1e888937983bee016f5ea52310bd4721983"
+        expect(response.status).to eq(400)
       end
     end
 

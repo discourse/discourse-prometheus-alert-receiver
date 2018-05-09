@@ -207,7 +207,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "commonLabels" => {
               "alertname" => "AnAlert",
             },
-            "alerts"   => [
+            "alerts" => [
               {
                 "status"       => "firing",
                 "labels"       => {
@@ -310,7 +310,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "commonLabels" => {
               "alertname" => "AnAlert",
             },
-            "alerts"   => [
+            "alerts" => [
               {
                 "status"       => "resolved",
                 "labels"       => {
@@ -384,7 +384,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "commonLabels" => {
               "alertname" => "AnAlert",
             },
-            "alerts"   => [
+            "alerts" => [
               {
                 "status"       => "firing",
                 "labels"       => {
@@ -448,7 +448,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
       end
 
-
       context "a repeated alert" do
         before :each do
           topic.custom_fields['prom_alert_history'] = {
@@ -477,7 +476,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "commonLabels" => {
               "alertname" => "AnAlert",
             },
-            "alerts"   => [
+            "alerts" => [
               {
                 "status"       => "firing",
                 "labels"       => {
@@ -549,7 +548,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "commonLabels" => {
               "alertname" => "AnAlert",
             },
-            "alerts"   => [
+            "alerts" => [
               {
                 "status"       => "firing",
                 "labels"       => {
@@ -658,7 +657,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "commonLabels" => {
               "alertname" => "AnAlert",
             },
-            "alerts"   => [
+            "alerts" => [
               {
                 "status"       => "resolved",
                 "labels"       => {
@@ -697,7 +696,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "commonLabels" => {
               "alertname" => "AnAlert",
             },
-            "alerts"   => [
+            "alerts" => [
               {
                 "status"       => "firing",
                 "labels"       => {

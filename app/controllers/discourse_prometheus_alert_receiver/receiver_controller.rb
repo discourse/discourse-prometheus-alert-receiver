@@ -6,7 +6,7 @@ module DiscoursePrometheusAlertReceiver
     skip_before_action :check_xhr,
                        :verify_authenticity_token,
                        :redirect_to_login_if_required,
-                       only: [:receive]
+                       only: [:generate_receiver_url, :receive]
 
     def generate_receiver_url
       params.require(:category_id)

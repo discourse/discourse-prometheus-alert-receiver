@@ -167,8 +167,8 @@ module DiscoursePrometheusAlertReceiver
 
     def first_post_body(receiver, params, alert_history, prev_topic_id)
       (params["commonAnnotations"]["topic_body"] || "") + "\n\n" +
-        rendered_alert_history(alert_history) +
-        prev_topic_link(prev_topic_id)
+        prev_topic_link(prev_topic_id) +
+        rendered_alert_history(alert_history)
     end
 
     def rendered_alert_history(alert_history)
@@ -215,7 +215,7 @@ module DiscoursePrometheusAlertReceiver
     def prev_topic_link(topic_id)
       return "" if topic_id.nil?
 
-      "\n\nThis alert has been [seen before](#{Discourse.base_url}/t/#{topic_id})"
+      "([Previous topic for this alert](#{Discourse.base_url}/t/#{topic_id}).)"
     end
 
     def update_alert_history(previous_history, active_alerts)

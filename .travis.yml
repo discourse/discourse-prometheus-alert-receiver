@@ -18,6 +18,7 @@ before_install:
   - git clone --depth=1 https://github.com/discourse/discourse.git build; cd build;
   - gem install bundler rubocop
   - git clone --depth=1 -b $TRAVIS_BRANCH https://github.com/$TRAVIS_REPO_SLUG.git plugins/discourse-prometheus-alert-receiver
+  - git clone --depth=1 https://github.com/discourse/discourse-assign.git plugins/discourse-assign
   - yarn global add eslint babel-eslint
   - eslint --ext .es6 plugins/**/assets/javascripts
   - cd plugins/discourse-prometheus-alert-receiver; rubocop

@@ -187,7 +187,8 @@ module DiscoursePrometheusAlertReceiver
     end
 
     def topic_title(params)
-      params["commonAnnotations"]["topic_title"] || "Alert investigation required: #{params["groupLabels"].map { |k, v| "#{k}: #{v}" }.join(", ")}"
+      params["groupLabels"].permit!
+      params["commonAnnotations"]["topic_title"] || "Alert investigation required: #{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}"
     end
 
     def alert_link(alert)

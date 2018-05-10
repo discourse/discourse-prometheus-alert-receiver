@@ -200,6 +200,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "version"  => "4",
             "status"   => "firing",
             "groupKey" => group_key,
+            "groupLabels"  => {
+              "foo" => "bar",
+              "baz" => "wombat",
+            },
             "commonAnnotations" => {
               "topic_body"  => "Test topic... test topic... whoop whoop",
               "topic_title" => "Alert investigation required: AnAlert is on the loose",
@@ -282,6 +286,74 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
       end
 
+      context "an alert with no annotations" do
+        let(:topic_map) { {} }
+
+        let(:payload) do
+          {
+            "version"  => "4",
+            "status"   => "firing",
+            "groupKey" => group_key,
+            "commonAnnotations" => {
+              "unrelated" => "annotation",
+            },
+            "groupLabels"  => {
+              "foo" => "bar",
+              "baz" => "wombat",
+            },
+            "commonLabels" => {
+              "alertname" => "AnAlert",
+            },
+            "alerts" => [
+              {
+                "status"       => "firing",
+                "labels"       => {
+                  "id" => "somethingfunny",
+                },
+                "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
+                "startsAt"     => "2020-01-02T03:04:05.12345678Z",
+                "endsAt"       => "0001-01-01T00:00:00Z",
+              },
+            ],
+          }
+        end
+
+        let(:topic) do
+          Topic.find_by(id: receiver["topic_map"][group_key])
+        end
+
+        it "creates a new topic" do
+          expect { resp }.to change { Topic.count }.by(1)
+        end
+
+        it "sets an appropriate topic title" do
+          resp
+
+          expect(topic).to_not be(nil)
+          expect(topic.title).to eq("Alert investigation required: foo: bar, baz: wombat")
+        end
+
+        it "sets the first post's body" do
+          resp
+
+          expect(topic).to_not be(nil)
+          expect(topic.posts.first.raw).to match(/\A\n\n# Alert History/m)
+        end
+
+        it "includes the alert details in the first post's body" do
+          resp
+
+          expect(topic.posts.first.raw).to match(/somethingfunny.*active since 2020-01-02 03:04:05 UTC/)
+        end
+
+        it "assigns the topic to someone in the assignee group" do
+          resp
+
+          expect(topic.assigned_to_user).to_not be(nil)
+          expect(topic.assigned_to_user.id).to eq(assignee.id)
+        end
+      end
+
       context "a resolving alert on an existing groupKey" do
         before :each do
           topic.custom_fields['prom_alert_history'] = {
@@ -303,6 +375,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "version"  => "4",
             "status"   => "resolved",
             "groupKey" => group_key,
+            "groupLabels"  => {
+              "foo" => "bar",
+              "baz" => "wombat",
+            },
             "commonAnnotations" => {
               "topic_body"  => "Test topic... test topic... whoop whoop",
               "topic_title" => "Alert investigation required: AnAlert is on the loose",
@@ -377,6 +453,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "version"  => "4",
             "status"   => "firing",
             "groupKey" => group_key,
+            "groupLabels"  => {
+              "foo" => "bar",
+              "baz" => "wombat",
+            },
             "commonAnnotations" => {
               "topic_body"  => "Test topic... test topic... whoop whoop",
               "topic_title" => "Alert investigation required: AnAlert is on the loose",
@@ -469,6 +549,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "version"  => "4",
             "status"   => "firing",
             "groupKey" => group_key,
+            "groupLabels"  => {
+              "foo" => "bar",
+              "baz" => "wombat",
+            },
             "commonAnnotations" => {
               "topic_body"  => "Test topic... test topic... whoop whoop",
               "topic_title" => "Alert investigation required: AnAlert is on the loose",
@@ -541,6 +625,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "version"  => "4",
             "status"   => "firing",
             "groupKey" => group_key,
+            "groupLabels"  => {
+              "foo" => "bar",
+              "baz" => "wombat",
+            },
             "commonAnnotations" => {
               "topic_body"  => "Test topic... test topic... whoop whoop",
               "topic_title" => "Alert investigation required: AnAlert is on the loose",
@@ -650,6 +738,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "version"  => "4",
             "status"   => "resolved",
             "groupKey" => group_key,
+            "groupLabels"  => {
+              "foo" => "bar",
+              "baz" => "wombat",
+            },
             "commonAnnotations" => {
               "topic_body"  => "Test topic... test topic... whoop whoop",
               "topic_title" => "Alert investigation required: AnAlert is on the loose",
@@ -688,6 +780,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "version"  => "4",
             "status"   => "firing",
             "groupKey" => group_key,
+            "groupLabels"  => {
+              "foo" => "bar",
+              "baz" => "wombat",
+            },
             "commonAnnotations" => {
               "topic_body"     => "Test topic... test topic... whoop whoop",
               "topic_title"    => "Alert investigation required: AnAlert is on the loose",

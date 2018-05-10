@@ -197,10 +197,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
         let(:payload) do
           {
-            "version"  => "4",
-            "status"   => "firing",
-            "groupKey" => group_key,
-            "groupLabels"  => {
+            "version"     => "4",
+            "status"      => "firing",
+            "groupKey"    => group_key,
+            "groupLabels" => {
               "foo" => "bar",
               "baz" => "wombat",
             },
@@ -297,7 +297,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "commonAnnotations" => {
               "unrelated" => "annotation",
             },
-            "groupLabels"  => {
+            "groupLabels" => {
               "foo" => "bar",
               "baz" => "wombat",
             },
@@ -372,10 +372,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
         let(:payload) do
           {
-            "version"  => "4",
-            "status"   => "resolved",
-            "groupKey" => group_key,
-            "groupLabels"  => {
+            "version"     => "4",
+            "status"      => "resolved",
+            "groupKey"    => group_key,
+            "groupLabels" => {
               "foo" => "bar",
               "baz" => "wombat",
             },
@@ -450,10 +450,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
         let(:payload) do
           {
-            "version"  => "4",
-            "status"   => "firing",
-            "groupKey" => group_key,
-            "groupLabels"  => {
+            "version"     => "4",
+            "status"      => "firing",
+            "groupKey"    => group_key,
+            "groupLabels" => {
               "foo" => "bar",
               "baz" => "wombat",
             },
@@ -546,10 +546,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
         let(:payload) do
           {
-            "version"  => "4",
-            "status"   => "firing",
-            "groupKey" => group_key,
-            "groupLabels"  => {
+            "version"     => "4",
+            "status"      => "firing",
+            "groupKey"    => group_key,
+            "groupLabels" => {
               "foo" => "bar",
               "baz" => "wombat",
             },
@@ -622,10 +622,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
         let(:payload) do
           {
-            "version"  => "4",
-            "status"   => "firing",
-            "groupKey" => group_key,
-            "groupLabels"  => {
+            "version"     => "4",
+            "status"      => "firing",
+            "groupKey"    => group_key,
+            "groupLabels" => {
               "foo" => "bar",
               "baz" => "wombat",
             },
@@ -735,10 +735,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
         let(:payload) do
           {
-            "version"  => "4",
-            "status"   => "resolved",
-            "groupKey" => group_key,
-            "groupLabels"  => {
+            "version"     => "4",
+            "status"      => "resolved",
+            "groupKey"    => group_key,
+            "groupLabels" => {
               "foo" => "bar",
               "baz" => "wombat",
             },
@@ -777,10 +777,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
         let(:payload) do
           {
-            "version"  => "4",
-            "status"   => "firing",
-            "groupKey" => group_key,
-            "groupLabels"  => {
+            "version"     => "4",
+            "status"      => "firing",
+            "groupKey"    => group_key,
+            "groupLabels" => {
               "foo" => "bar",
               "baz" => "wombat",
             },

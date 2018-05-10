@@ -141,6 +141,7 @@ module DiscoursePrometheusAlertReceiver
         raw: first_post_body(receiver, params, alert_history, receiver["topic_map"][params["groupKey"]]),
         category: Category.find_by(id: receiver[:category_id]),
         title: topic_title(params),
+        skip_validations: true,
       ).topic.tap do |t|
         if params["commonAnnotations"]["topic_assignee"]
           Rails.logger.debug("DPAR") { "Forcing assignment of user #{params["commonAnnotations"]["topic_assignee"].inspect}" }

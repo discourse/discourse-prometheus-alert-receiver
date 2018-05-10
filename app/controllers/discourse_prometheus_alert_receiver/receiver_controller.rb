@@ -101,9 +101,11 @@ module DiscoursePrometheusAlertReceiver
       topic = Topic.find_by(id: receiver[:topic_map][params["groupKey"]], closed: false)
 
       if topic
+        Rails.logger.debug("DPAR") { "Using existing topic #{topic.id}" }
         prev_alert_history = topic.custom_fields[::DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD]['alerts'] rescue []
         alert_history = update_alert_history(prev_alert_history, params["alerts"])
         if alert_history != prev_alert_history
+          Rails.logger.debug("DPAR") { "Alert history has changed; revising first post" }
           post = topic.posts.first
           PostRevisor.new(post).revise!(
             Discourse.system_user,
@@ -116,11 +118,14 @@ module DiscoursePrometheusAlertReceiver
           )
         end
       elsif params["status"] == "resolved"
+        Rails.logger.debug("DPAR") { "Received resolved alert on closed topic; ignoring" }
         # We don't care about resolved alerts if we've closed the topic
         return
       else
+        Rails.logger.debug("DPAR") { "New topic creation required" }
         alert_history = update_alert_history([], params["alerts"])
         topic = create_new_topic(receiver, params, alert_history)
+        Rails.logger.debug("DPAR") { "Created new topic, id=#{topic.id}" }
         receiver[:topic_map][params["groupKey"]] = topic.id
       end
 
@@ -138,10 +143,12 @@ module DiscoursePrometheusAlertReceiver
         title: topic_title(params),
       ).topic.tap do |t|
         if params["commonAnnotations"]["topic_assignee"]
+          Rails.logger.debug("DPAR") { "Forcing assignment of user #{params["commonAnnotations"]["topic_assignee"].inspect}" }
           assignee = User.find_by(username: params["commonAnnotations"]["topic_assignee"])
         end
 
         if receiver["topic_map"][params["groupKey"]]
+          Rails.logger.debug("DPAR") { "Linking to previous topic #{receiver["topic_map"][params["groupKey"]]}" }
           t.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD] = receiver["topic_map"][params["groupKey"]]
           t.save_custom_fields
         end

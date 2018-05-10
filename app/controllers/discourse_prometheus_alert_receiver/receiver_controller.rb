@@ -158,7 +158,7 @@ module DiscoursePrometheusAlertReceiver
     end
 
     def first_post_body(receiver, params, alert_history, prev_topic_id)
-      params["commonAnnotations"]["topic_body"] + "\n\n" +
+      (params["commonAnnotations"]["topic_body"] || "") + "\n\n" +
         rendered_alert_history(alert_history) +
         prev_topic_link(prev_topic_id)
     end

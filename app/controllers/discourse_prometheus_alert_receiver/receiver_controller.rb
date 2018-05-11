@@ -215,7 +215,7 @@ module DiscoursePrometheusAlertReceiver
     def prev_topic_link(topic_id)
       return "" if topic_id.nil?
 
-      "([Previous topic for this alert](#{Discourse.base_url}/t/#{topic_id}).)"
+      "([Previous topic for this alert](#{Discourse.base_url}/t/#{topic_id}).)\n\n"
     end
 
     def update_alert_history(previous_history, active_alerts)

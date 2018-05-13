@@ -16,12 +16,13 @@ randomly-selected member of a specified group.
    plugin](https://github.com/discourse/discourse-assign), which this plugin
    depends on.
 
-1. Create a new receiver URL by POSTing to `/prometheus/receiver/generate`,
-   with a request body that includes `category_id` (the numeric ID of the
-   site category to create all new topics in) and `assignee_group_id` (the
-   numeric group ID of the group from which to select an initial assignee).
-   Take note of the URL in the response body, you will need that to
-   configure the Prometheus Alertmanager.
+1. Create a new receiver URL by POSTing (as an admin user, so probably using
+   an API key) to `/prometheus/receiver/generate`, with a request body that
+   includes `category_id` (the numeric ID of the site category to create all
+   new topics in) and `assignee_group_id` (the numeric group ID of the group
+   from which to select an initial assignee).  Take note of the URL in the
+   response body, you will need that to configure the Prometheus
+   Alertmanager.
 
 1. Configure the Alertmanager to send webhook requests to your receiver URL,
    with a config something like this:
@@ -36,11 +37,11 @@ randomly-selected member of a specified group.
     receiver will deal gracefully with repeated alerts.
 
 1. For all alerts you send to Discourse, you can provide some annotations
-   in the alert rule to customise the created topic.  Remember that
-   annotations can be templated, so you can easily adjust them for each
-   alert, however they *must* be common to all alerts in the group, so
-   choose your template variables with some care.  The recognised
-   annotations are:
+   in the alert rule to customise the created topic.  However, Prometheus
+   templates are limited in what they can do, so there's a certain amount of
+   hard-coding in the title.
+
+   The recognised annotations are:
 
   * **`topic_title`** -- the title to give to all newly-created topics for
     the alert.  If you don't set this, you'll get a fairly gnarly-looking

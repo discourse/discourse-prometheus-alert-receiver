@@ -330,7 +330,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           resp
 
           expect(topic).to_not be(nil)
-          expect(topic.title).to eq("Alert investigation required: foo: bar, baz: wombat")
+          expect(topic.title).to eq("Alert: foo: bar, baz: wombat")
         end
 
         it "sets the first post's body" do

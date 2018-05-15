@@ -222,6 +222,7 @@ module DiscoursePrometheusAlertReceiver
       # Sadly, this is the easiest way to get a deep dup
       JSON.parse(previous_history.to_json).tap do |new_history|
         active_alerts.sort_by { |a| a['startsAt'] }.each do |alert|
+          Rails.logger.debug("DPAR") { "Processing webhook alert #{alert.inspect}" }
           stored_alert = new_history.find { |p| p['id'] == alert['labels']['id'] && p['starts_at'] == alert['startsAt'] }
           if stored_alert.nil? && alert['status'] == "firing"
             stored_alert = {
@@ -232,7 +233,10 @@ module DiscoursePrometheusAlertReceiver
             new_history << stored_alert
           end
 
+          Rails.logger.debug("DPAR") { "Stored alert is #{stored_alert.inspect}" }
+
           if alert['status'] == "resolved" && stored_alert && stored_alert['ends_at'].nil?
+            Rails.logger.debug("DPAR") { "Marking alert as resolved" }
             stored_alert['ends_at'] = alert['endsAt']
           end
         end

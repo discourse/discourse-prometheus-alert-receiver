@@ -1,6 +1,7 @@
 # name: discourse-prometheus-alert-receiver
 # about: Receives a Prometheus webhook and creates a topic in Discourse
 # version: 0.1
+# url: https://github.com/discourse/discourse-prometheus-alert-receiver
 
 after_initialize do
   [

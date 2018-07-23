@@ -156,6 +156,9 @@ module DiscoursePrometheusAlertReceiver
 
         assignee ||= random_group_member(receiver)
 
+        # Force assign to TGX first
+        # See https://dev.discourse.org/t/feeding-most-alerts-into-dev-rather-than-chat/3416/22?u=tgxworld
+        assignee = User.find_by_username('tgxworld')
         TopicAssigner.new(t, Discourse.system_user).assign(assignee) unless assignee.nil?
       end
     end

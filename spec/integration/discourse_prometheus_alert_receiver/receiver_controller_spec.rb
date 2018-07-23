@@ -231,6 +231,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
         it "creates a new topic" do
           expect { resp }.to change { Topic.count }.by(1)
+          expect(topic.category).to eq(category)
         end
 
         it "sets an appropriate topic title" do

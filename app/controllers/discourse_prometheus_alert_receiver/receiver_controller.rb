@@ -56,10 +56,12 @@ module DiscoursePrometheusAlertReceiver
       category = Category.find_by(id: receiver[:category_id])
       raise Discourse::InvalidParameters unless category
 
-      if receiver[:assignee_group_id]
-        assigned_topic(receiver, params)
-      else
-        add_post(receiver, params)
+      Topic.transaction do
+        if receiver[:assignee_group_id]
+          assigned_topic(receiver, params)
+        else
+          add_post(receiver, params)
+        end
       end
 
       PluginStore.set(::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
@@ -140,8 +142,7 @@ module DiscoursePrometheusAlertReceiver
       PostCreator.create!(Discourse.system_user,
         raw: first_post_body(receiver, params, alert_history, receiver["topic_map"][params["groupKey"]]),
         category: Category.where(id: receiver[:category_id]).pluck(:id).first,
-        title: topic_title(params),
-        skip_validations: true,
+        title: topic_title(params)
       ).topic.tap do |t|
         if params["commonAnnotations"]["topic_assignee"]
           Rails.logger.debug("DPAR") { "Forcing assignment of user #{params["commonAnnotations"]["topic_assignee"].inspect}" }
@@ -158,7 +159,7 @@ module DiscoursePrometheusAlertReceiver
 
         # Force assign to TGX first
         # See https://dev.discourse.org/t/feeding-most-alerts-into-dev-rather-than-chat/3416/22?u=tgxworld
-        assignee = User.find_by_username('tgxworld')
+        assignee = User.find_by_username('tgxworld') if Rails.env.production?
         TopicAssigner.new(t, Discourse.system_user).assign(assignee) unless assignee.nil?
       end
     end

@@ -48,7 +48,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
           post "/prometheus/receiver/generate.json", params: { category_id: category.id }
 
-          expect(response).to be_success
+          expect(response.status).to eq(200)
 
           body = JSON.parse(response.body)
           receiver = PluginStoreRow.last
@@ -73,7 +73,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
 
         it "succeeds" do
-          expect(resp).to be_success
+          expect(resp.status).to eq(200)
         end
 
         it "gives us a sensible-looking receiver URL" do
@@ -143,7 +143,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         freeze_time(Time.zone.local(2017, 8, 11)) do
           post "/prometheus/receiver/#{token}", params: payload
 
-          expect(response).to be_success
+          expect(response.status).to eq(200)
 
           post = Post.last
           topic = post.topic
@@ -162,7 +162,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             post "/prometheus/receiver/#{token}", params: payload
           end.to_not change { Topic.count }
 
-          expect(response).to be_success
+          expect(response.status).to eq(200)
 
           new_post = Post.last
 
@@ -355,7 +355,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
       end
 
       context "a resolving alert on an existing groupKey" do
-        before :each do
+        before do
           topic.custom_fields['prom_alert_history'] = {
             'alerts' => [
               {
@@ -400,9 +400,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           }
         end
 
-        let(:topic) do
-          Fabricate(:topic, posts: [Fabricate(:post)])
-        end
+        let(:topic) { Fabricate(:post).topic }
 
         it "updates the existing topic" do
           expect { resp }.to_not change { Topic.count }
@@ -433,7 +431,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
       end
 
       context "a new firing alert on an existing groupKey" do
-        before :each do
+        before do
           topic.custom_fields['prom_alert_history'] = {
             'alerts' => [
               {
@@ -485,9 +483,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           }
         end
 
-        let(:topic) do
-          Fabricate(:topic, posts: [Fabricate(:post)])
-        end
+        let(:topic) { Fabricate(:post).topic }
 
         it "updates the existing topic" do
           expect { resp }.to_not change { Topic.count }
@@ -529,7 +525,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
       end
 
       context "a repeated alert" do
-        before :each do
+        before do
           topic.custom_fields['prom_alert_history'] = {
             'alerts' => [
               {
@@ -573,9 +569,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           }
         end
 
-        let(:topic) do
-          Fabricate(:topic, posts: [Fabricate(:post, raw: 'unchangeable')])
-        end
+        let(:topic) { Fabricate(:post, raw: 'unchangeable').topic }
 
         it "does not change the existing topic" do
           expect { resp }.to_not change { topic.reload; topic.posts.first.revisions.count }
@@ -605,7 +599,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
       end
 
       context "firing alert for a groupkey referencing a closed topic" do
-        before :each do
+        before do
           closed_topic.custom_fields['prom_alert_history'] = {
             'alerts' => [
               {
@@ -649,7 +643,12 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           }
         end
 
-        let(:closed_topic) { Fabricate(:topic, closed: true, posts: [Fabricate(:post, raw: "unchanged")]) }
+        let(:closed_topic) do
+          topic = Fabricate(:post, raw: 'unchanged').topic
+          topic.update!(closed: true)
+          topic
+        end
+
         let(:keyed_topic) do
           Topic.find_by(id: receiver["topic_map"][group_key])
         end
@@ -717,7 +716,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
       end
 
       context "resolved alert for a groupkey referencing a closed topic" do
-        before :each do
+        before do
           closed_topic.custom_fields['prom_alert_history'] = {
             'alerts' => [
               {
@@ -730,7 +729,12 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           closed_topic.save_custom_fields(true)
         end
 
-        let(:closed_topic) { Fabricate(:topic, closed: true, posts: [Fabricate(:post, raw: "unchanged")]) }
+        let(:closed_topic) do
+          topic = Fabricate(:post, raw: 'unchanged').topic
+          topic.update!(closed: true)
+          topic
+        end
+
         let(:topic_map) { { group_key => closed_topic.id } }
 
         let(:payload) do

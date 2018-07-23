@@ -1,11 +1,10 @@
 language: ruby
 
 addons:
-  postgresql: 9.5
+  postgresql: 9.6
 
 rvm:
-  - 2.4.1
-  - 2.3.3
+  - 2.5.0
 
 services:
   - redis-server
@@ -16,12 +15,8 @@ cache: yarn
 
 before_install:
   - git clone --depth=1 https://github.com/discourse/discourse.git build; cd build;
-  - gem install bundler rubocop
   - git clone --depth=1 -b $TRAVIS_BRANCH https://github.com/$TRAVIS_REPO_SLUG.git plugins/discourse-prometheus-alert-receiver
   - git clone --depth=1 https://github.com/discourse/discourse-assign.git plugins/discourse-assign
-  - yarn global add eslint babel-eslint
-  - eslint --ext .es6 plugins/**/assets/javascripts
-  - cd plugins/discourse-prometheus-alert-receiver; rubocop
 
 before_script:
   - bundle exec rake db:create db:migrate

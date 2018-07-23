@@ -139,7 +139,7 @@ module DiscoursePrometheusAlertReceiver
     def create_new_topic(receiver, params, alert_history)
       PostCreator.create!(Discourse.system_user,
         raw: first_post_body(receiver, params, alert_history, receiver["topic_map"][params["groupKey"]]),
-        category: Category.find_by(id: receiver[:category_id]),
+        category: Category.find(id: receiver[:category_id]),
         title: topic_title(params),
         skip_validations: true,
       ).topic.tap do |t|

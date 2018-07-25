@@ -171,9 +171,15 @@ module DiscoursePrometheusAlertReceiver
     end
 
     def first_post_body(receiver, params, alert_history, prev_topic_id)
-      (params["commonAnnotations"]["topic_body"] || "") + "\n\n" +
-        prev_topic_link(prev_topic_id) +
-        rendered_alert_history(alert_history)
+      <<~BODY
+      #{params["commonAnnotations"]["topic_body"] || ""}
+
+      #{prev_topic_link(prev_topic_id)}
+
+      #{rendered_alert_history(alert_history)}
+
+      #{params["externalURL"]}
+      BODY
     end
 
     def rendered_alert_history(alert_history)

@@ -305,6 +305,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "commonLabels" => {
               "alertname" => "AnAlert",
             },
+            "externalURL" => "alerts.test.org",
             "alerts" => [
               {
                 "status"       => "firing",
@@ -338,7 +339,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           resp
 
           expect(topic).to_not be(nil)
-          expect(topic.posts.first.raw).to match(/\A\n\n# Alert History/m)
+          raw = topic.posts.first.raw
+          expect(raw).to match(/# Alert History/m)
+          expect(raw).to include("alerts.test.org")
         end
 
         it "includes the alert details in the first post's body" do

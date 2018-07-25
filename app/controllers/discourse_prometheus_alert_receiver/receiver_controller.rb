@@ -100,15 +100,20 @@ module DiscoursePrometheusAlertReceiver
     end
 
     def assigned_topic(receiver, params)
-      topic = Topic.find_by(id: receiver[:topic_map][params["groupKey"]], closed: false)
+      topic = Topic.find_by(
+        id: receiver[:topic_map][params["groupKey"]],
+        closed: false
+      )
 
       if topic
         Rails.logger.debug("DPAR") { "Using existing topic #{topic.id}" }
         prev_alert_history = topic.custom_fields[::DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD]['alerts'] rescue []
         alert_history = update_alert_history(prev_alert_history, params["alerts"])
+
         if alert_history != prev_alert_history
           Rails.logger.debug("DPAR") { "Alert history has changed; revising first post" }
           post = topic.posts.first
+
           PostRevisor.new(post).revise!(
             Discourse.system_user,
             raw: first_post_body(
@@ -172,14 +177,49 @@ module DiscoursePrometheusAlertReceiver
 
     def first_post_body(receiver, params, alert_history, prev_topic_id)
       <<~BODY
+      #{params["externalURL"]}
+
       #{params["commonAnnotations"]["topic_body"] || ""}
 
       #{prev_topic_link(prev_topic_id)}
 
-      #{rendered_alert_history(alert_history)}
-
-      #{params["externalURL"]}
+      #{render_alerts(alert_history)}
       BODY
+    end
+
+    def render_alerts(alert_history)
+      firing_alerts = []
+      resolved_alerts = []
+
+      alert_history.each do |alert|
+        status = alert['status']
+
+        if status == 'firing'
+          firing_alerts << alert
+        elsif status == 'resolved'
+          resolved_alerts << alert
+        end
+      end
+
+      output = ""
+
+      if firing_alerts.length > 0
+        output += "# :fire: Firing Alerts\n\n"
+
+        output += firing_alerts.map do |alert|
+          " * [#{alert_label(alert)}](#{alert_link(alert)})"
+        end.join("\n")
+      end
+
+      if resolved_alerts.length > 0
+        output += "# Alert History\n\n"
+
+        output += resolved_alerts.map do |alert|
+          " * [#{alert_label(alert)}](#{alert_link(alert)})"
+        end.join("\n")
+      end
+
+      output
     end
 
     def rendered_alert_history(alert_history)
@@ -225,7 +265,6 @@ module DiscoursePrometheusAlertReceiver
 
     def prev_topic_link(topic_id)
       return "" if topic_id.nil?
-
       "([Previous topic for this alert](#{Discourse.base_url}/t/#{topic_id}).)\n\n"
     end
 
@@ -234,21 +273,28 @@ module DiscoursePrometheusAlertReceiver
       JSON.parse(previous_history.to_json).tap do |new_history|
         active_alerts.sort_by { |a| a['startsAt'] }.each do |alert|
           Rails.logger.debug("DPAR") { "Processing webhook alert #{alert.inspect}" }
-          stored_alert = new_history.find { |p| p['id'] == alert['labels']['id'] && p['starts_at'] == alert['startsAt'] }
+
+          stored_alert = new_history.find do |p|
+            p['id'] == alert['labels']['id'] && p['starts_at'] == alert['startsAt']
+          end
+
           if stored_alert.nil? && alert['status'] == "firing"
             stored_alert = {
-              'id'        => alert['labels']['id'],
+              'id' => alert['labels']['id'],
               'starts_at' => alert['startsAt'],
               'graph_url' => alert['generatorURL'],
+              'status' => alert['status']
             }
+
             new_history << stored_alert
           end
 
           Rails.logger.debug("DPAR") { "Stored alert is #{stored_alert.inspect}" }
 
-          if alert['status'] == "resolved" && stored_alert && stored_alert['ends_at'].nil?
+          if alert['status'] == "resolved" && stored_alert.dig('ends_at').nil?
             Rails.logger.debug("DPAR") { "Marking alert as resolved" }
             stored_alert['ends_at'] = alert['endsAt']
+            stored_alert['status'] = alert['status']
           end
         end
       end

@@ -107,7 +107,12 @@ module DiscoursePrometheusAlertReceiver
 
       if topic
         Rails.logger.debug("DPAR") { "Using existing topic #{topic.id}" }
-        prev_alert_history = topic.custom_fields[::DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD]['alerts'] rescue []
+
+        prev_alert_history = begin
+          key = ::DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD
+          topic.custom_fields[key]&.dig('alerts') || []
+        end
+
         alert_history = update_alert_history(prev_alert_history, params["alerts"])
 
         if alert_history != prev_alert_history
@@ -284,7 +289,7 @@ module DiscoursePrometheusAlertReceiver
 
           Rails.logger.debug("DPAR") { "Stored alert is #{stored_alert.inspect}" }
 
-          if alert['status'] == "resolved" && stored_alert&.dig('ends_at')&.nil?
+          if alert['status'] == "resolved" && stored_alert&.dig('ends_at').nil?
             Rails.logger.debug("DPAR") { "Marking alert as resolved" }
             stored_alert['ends_at'] = alert['endsAt']
             stored_alert['status'] = alert['status']

@@ -291,7 +291,7 @@ module DiscoursePrometheusAlertReceiver
 
           Rails.logger.debug("DPAR") { "Stored alert is #{stored_alert.inspect}" }
 
-          if alert['status'] == "resolved" && stored_alert&.dig('ends_at').nil?
+          if alert['status'] == "resolved" && stored_alert&.dig('ends_at')&.nil?
             Rails.logger.debug("DPAR") { "Marking alert as resolved" }
             stored_alert['ends_at'] = alert['endsAt']
             stored_alert['status'] = alert['status']

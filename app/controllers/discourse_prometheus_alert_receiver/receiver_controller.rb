@@ -222,13 +222,6 @@ module DiscoursePrometheusAlertReceiver
       output
     end
 
-    def rendered_alert_history(alert_history)
-      "# Alert History\n\n" +
-        alert_history.map do |alert|
-          " * [#{alert_label(alert)}](#{alert_link(alert)})"
-        end.join("\n")
-    end
-
     def alert_label(alert)
       "#{alert['id']} (#{alert_time_range(alert)})"
     end

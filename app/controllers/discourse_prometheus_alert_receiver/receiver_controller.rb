@@ -217,7 +217,7 @@ module DiscoursePrometheusAlertReceiver
       end
 
       if resolved_alerts.length > 0
-        output += "# Alert History\n\n"
+        output += "\n# Alert History\n\n"
 
         output += resolved_alerts.map do |alert|
           " * [#{alert_label(alert)}](#{alert_link(alert)})"

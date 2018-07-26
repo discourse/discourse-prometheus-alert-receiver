@@ -344,7 +344,13 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                 'status' => 'firing'
-              }
+              },
+              {
+                'id' => 'somethingnotfunny',
+                'starts_at' => "2020-01-02T03:04:05.12345678Z",
+                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
+                'status' => 'firing'
+              },
             ]
           }
           topic.save_custom_fields(true)
@@ -377,7 +383,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
                 "startsAt" => "2020-01-02T03:04:05.12345678Z",
                 "endsAt" => "2020-01-02T09:08:07.09876543Z",
-              },
+              }
             ],
           }
         end
@@ -404,10 +410,22 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                 'status' => 'resolved'
               },
+              {
+                'id' => 'somethingnotfunny',
+                'starts_at' => "2020-01-02T03:04:05.12345678Z",
+                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
+                'status' => 'firing'
+              }
             ]
           )
 
           raw = topic.posts.first.raw
+
+          expect(raw).to include("# :fire: Firing Alerts")
+
+          expect(raw).to include(
+            "[somethingnotfunny (active since 2020-01-02 03:04:05 UTC)]"
+          )
 
           expect(raw).to include("# Alert History")
 

@@ -70,15 +70,16 @@ module Jobs
           topic.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD]
         )
 
+        title = topic_title(params, topic: topic)
         post = topic.posts.first
 
-        if post.raw.chomp != raw.chomp
+        if post.raw.chomp != raw.chomp || topic.title != title
           Rails.logger.debug("DPAR") { "Alert history has changed; revising first post" }
           post = topic.posts.first
 
           PostRevisor.new(post, topic).revise!(
             Discourse.system_user,
-            title: topic_title(params, topic: topic),
+            title: title,
             raw: raw
           )
         end

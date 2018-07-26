@@ -119,8 +119,9 @@ module DiscoursePrometheusAlertReceiver
           Rails.logger.debug("DPAR") { "Alert history has changed; revising first post" }
           post = topic.posts.first
 
-          PostRevisor.new(post).revise!(
+          PostRevisor.new(post, topic).revise!(
             Discourse.system_user,
+            title: topic_title(params, topic: topic),
             raw: first_post_body(
               receiver,
               params,
@@ -199,7 +200,7 @@ module DiscoursePrometheusAlertReceiver
       alert_history.each do |alert|
         status = alert['status']
 
-        if status == 'firing'
+        if is_firing?(status)
           firing_alerts << alert
         elsif status == 'resolved'
           resolved_alerts << alert
@@ -243,9 +244,23 @@ module DiscoursePrometheusAlertReceiver
       Time.parse(t).strftime("%Y-%m-%d %H:%M:%S UTC")
     end
 
-    def topic_title(params)
+    def topic_title(params, topic: nil)
       params["groupLabels"].permit!
-      (params["commonLabels"]["datacenter"] || "") + (params["commonAnnotations"]["topic_title"] || "alert: #{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}")
+
+      firing =
+        if topic
+          key = DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD
+
+          (topic.custom_fields[key]["alerts"] || []).all? do |alert|
+            is_firing?(params["status"])
+          end
+        else
+          is_firing?(params["status"])
+        end
+
+      (firing ? ":fire: " : ":white_check_mark: ") +
+        (params["commonLabels"]["datacenter"] || "") +
+        (params["commonAnnotations"]["topic_title"] || "alert: #{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}")
     end
 
     def alert_link(alert)
@@ -266,6 +281,10 @@ module DiscoursePrometheusAlertReceiver
       "([Previous topic for this alert](#{Discourse.base_url}/t/#{topic_id}).)\n\n"
     end
 
+    def is_firing?(status)
+      status == "firing".freeze
+    end
+
     def update_alert_history(previous_history, active_alerts)
       # Sadly, this is the easiest way to get a deep dup
       JSON.parse(previous_history.to_json).tap do |new_history|
@@ -276,7 +295,7 @@ module DiscoursePrometheusAlertReceiver
             p['id'] == alert['labels']['id'] && p['starts_at'] == alert['startsAt']
           end
 
-          if stored_alert.nil? && alert['status'] == "firing"
+          if stored_alert.nil? && is_firing?(alert['status'])
             stored_alert = {
               'id' => alert['labels']['id'],
               'starts_at' => alert['startsAt'],

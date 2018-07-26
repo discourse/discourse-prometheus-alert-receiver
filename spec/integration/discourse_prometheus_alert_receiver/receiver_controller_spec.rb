@@ -238,7 +238,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(topic.category).to eq(category)
 
           expect(topic.title).to eq(
-            "Alert investigation required: AnAlert is on the loose"
+            ":fire: Alert investigation required: AnAlert is on the loose"
           )
 
           expect(receiver["topic_map"][group_key]).to eq(topic.id)
@@ -314,7 +314,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             post "/prometheus/receiver/#{token}", params: payload
           end.to change { Topic.count }.by(1)
 
-          expect(topic.title).to eq("Alert: foo: bar, baz: wombat")
+          expect(topic.title).to eq(":fire: alert: foo: bar, baz: wombat")
 
           raw = topic.posts.first.raw
 
@@ -384,6 +384,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           end.to_not change { Topic.count }
 
           topic.reload
+
+          expect(topic.title).to eq(
+            ":white_check_mark: Alert investigation required: AnAlert is on the loose"
+          )
 
           expect(topic.custom_fields['prom_alert_history']['alerts']).to eq(
             [
@@ -471,6 +475,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
           topic.reload
 
+          expect(topic.title).to eq(
+            ":fire: Alert investigation required: AnAlert is on the loose"
+          )
+
           expect(topic.custom_fields['prom_alert_history']['alerts']).to eq(
             [
               {
@@ -507,6 +515,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               }
             ]
           }
+
           topic.save_custom_fields(true)
         end
 
@@ -637,7 +646,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           )
 
           expect(keyed_topic.title).to eq(
-            "Alert investigation required: AnAlert is on the loose"
+            ":fire: Alert investigation required: AnAlert is on the loose"
           )
 
           expect(receiver["topic_map"][group_key]).to eq(keyed_topic.id)

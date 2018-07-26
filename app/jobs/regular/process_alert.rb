@@ -64,19 +64,23 @@ module Jobs
 
         alert_history = update_alert_history(prev_alert_history, params["alerts"])
 
-        if alert_history != prev_alert_history
+        raw = first_post_body(
+          receiver,
+          params,
+          alert_history,
+          topic.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD]
+        )
+
+        post = topic.posts.first
+
+        if post.raw.chomp != raw.chomp
           Rails.logger.debug("DPAR") { "Alert history has changed; revising first post" }
           post = topic.posts.first
 
           PostRevisor.new(post, topic).revise!(
             Discourse.system_user,
             title: topic_title(params, topic: topic),
-            raw: first_post_body(
-              receiver,
-              params,
-              alert_history,
-              topic.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD]
-            )
+            raw: raw
           )
         end
       elsif params["status"] == "resolved"

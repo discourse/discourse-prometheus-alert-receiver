@@ -541,6 +541,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           }
 
           topic.save_custom_fields(true)
+
+          expect do
+            post "/prometheus/receiver/#{token}", params: payload
+          end.to change { topic.reload; topic.posts.first.revisions.count }.by(1)
         end
 
         let(:topic_map) { { group_key => topic.id } }
@@ -593,8 +597,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               },
             ]
           )
-
-          expect(topic.posts.first.raw).to match(/unchangeable/)
         end
       end
 
@@ -694,30 +696,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
       end
 
-      context "resolved alert for a groupkey referencing a closed topic" do
-        before do
-          closed_topic.custom_fields['prom_alert_history'] = {
-            'alerts' => [
-              {
-                'id' => 'somethingfunny',
-                'starts_at' => "2020-01-02T03:04:05.12345678Z",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'status' => "resolved"
-              }
-            ]
-          }
-
-          closed_topic.save_custom_fields(true)
-        end
-
-        let(:closed_topic) do
-          topic = Fabricate(:post, raw: 'unchanged').topic
-          topic.update!(closed: true)
-          topic
-        end
-
-        let(:topic_map) { { group_key => closed_topic.id } }
-
+      context "resolved alert for a groupkey" do
         let(:payload) do
           {
             "version" => "4",
@@ -748,12 +727,53 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           }
         end
 
-        it "does not update the closed topic" do
-          expect do
+        let(:first_post) { Fabricate(:post, raw: 'unchanged') }
+        let(:topic) { first_post.topic }
+        let(:topic_map) { { group_key => topic.id } }
+
+        before do
+          topic.custom_fields['prom_alert_history'] = {
+            'alerts' => [
+              {
+                'id' => 'somethingfunny',
+                'starts_at' => "2020-01-02T03:04:05.12345678Z",
+                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
+                'status' => "resolved"
+              }
+            ]
+          }
+
+          topic.save_custom_fields(true)
+        end
+
+        describe "referencing an open topic" do
+          it "should update the first post of the topic" do
             expect do
               post "/prometheus/receiver/#{token}", params: payload
-            end.to_not change { closed_topic.reload.posts.first.revisions.count }
-          end.to_not change { Topic.count }
+            end.to change { first_post.revisions.count }.by(1)
+
+            raw = first_post.reload.raw
+
+            expect(raw).to include("# Alert History")
+
+            expect(raw).to include(
+              "[somethingfunny (2020-01-02 03:04:05 UTC to 2020-01-02 09:08:07 UTC)]"
+            )
+          end
+        end
+
+        describe "referencing a closed topic" do
+          before do
+            topic.update!(closed: true)
+          end
+
+          it "does not update the closed topic" do
+            expect do
+              expect do
+                post "/prometheus/receiver/#{token}", params: payload
+              end.to_not change { first_post.revisions.count }
+            end.to_not change { Topic.count }
+          end
         end
       end
 

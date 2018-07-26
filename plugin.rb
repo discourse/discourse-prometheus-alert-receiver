@@ -6,6 +6,7 @@
 after_initialize do
   [
     '../app/controllers/discourse_prometheus_alert_receiver/receiver_controller.rb',
+    '../app/jobs/regular/process_alert.rb',
   ].each { |path| load File.expand_path(path, __FILE__) }
 
   module ::DiscoursePrometheusAlertReceiver

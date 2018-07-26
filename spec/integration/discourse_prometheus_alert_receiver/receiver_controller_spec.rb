@@ -97,6 +97,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
       PluginStore.get(::DiscoursePrometheusAlertReceiver::PLUGIN_NAME, token)
     end
 
+    before do
+      SiteSetting.queue_jobs = false
+    end
+
     describe 'when token is missing or too short' do
       it "should indicate the resource wasn't found" do
         post "/prometheus/receiver/"
@@ -139,7 +143,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
       it 'should create the right topic' do
         freeze_time(Time.zone.local(2017, 8, 11)) do
-          post "/prometheus/receiver/#{token}", params: payload
+          expect do
+            post "/prometheus/receiver/#{token}", params: payload
+          end.to change { Topic.count }.by(1)
 
           expect(response.status).to eq(200)
 
@@ -290,7 +296,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "commonLabels" => {
               "alertname" => "AnAlert",
             },
-            "externalURL" => "alerts.test.org",
+            "externalURL" => "supposed.to.be.a.url",
             "alerts" => [
               {
                 "status" => "firing",
@@ -319,7 +325,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           raw = topic.posts.first.raw
 
           expect(raw).to match(/# :fire: Firing Alerts/m)
-          expect(raw).to include("alerts.test.org")
+          expect(raw).to include("supposed.to.be.a.url")
 
           expect(raw).to include(
             "[somethingfunny (active since 2020-01-02 03:04:05 UTC)]"

@@ -201,7 +201,7 @@ module Jobs
           is_firing?(params["status"])
         end
 
-      (firing ? ":fire: " : ":white_check_mark: ") +
+      (firing ? ":fire: " : "") +
         (params["commonLabels"]["datacenter"] || "") +
         (params["commonAnnotations"]["topic_title"] || "alert: #{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}")
     end

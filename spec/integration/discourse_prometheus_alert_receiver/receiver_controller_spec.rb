@@ -392,7 +392,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           topic.reload
 
           expect(topic.title).to eq(
-            ":white_check_mark: Alert investigation required: AnAlert is on the loose"
+            "Alert investigation required: AnAlert is on the loose"
           )
 
           expect(topic.custom_fields['prom_alert_history']['alerts']).to eq(

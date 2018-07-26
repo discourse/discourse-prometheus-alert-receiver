@@ -8,7 +8,7 @@ module Jobs
         token
       )
 
-      params = args[:params]
+      params = JSON.parse(args[:params])
 
       Topic.transaction do
         if receiver[:assignee_group_id]

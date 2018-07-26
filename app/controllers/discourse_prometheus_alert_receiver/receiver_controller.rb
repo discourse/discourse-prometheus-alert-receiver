@@ -58,7 +58,7 @@ module DiscoursePrometheusAlertReceiver
 
       Jobs.enqueue(:process_alert,
         token: token,
-        params: params.permit!.to_h
+        params: params.permit!.to_h.to_json
       )
 
       render json: success_json

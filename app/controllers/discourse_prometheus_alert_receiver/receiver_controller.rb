@@ -145,7 +145,7 @@ module DiscoursePrometheusAlertReceiver
       # explicitly declared as JSON fields, so we have to wrap our array in
       # a single-element hash.
       topic.custom_fields[::DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD] = { 'alerts' => alert_history }
-      topic.save!
+      topic.save_custom_fields
     end
 
     def create_new_topic(receiver, params, alert_history)

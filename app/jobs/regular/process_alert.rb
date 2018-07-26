@@ -70,7 +70,7 @@ module Jobs
           topic.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD]
         )
 
-        title = topic_title(params, topic: topic)
+        title = topic_title(params, alert_history: alert_history)
         post = topic.posts.first
 
         if post.raw.chomp != raw.chomp || topic.title != title
@@ -79,8 +79,12 @@ module Jobs
 
           PostRevisor.new(post, topic).revise!(
             Discourse.system_user,
-            title: title,
-            raw: raw
+            {
+              title: title,
+              raw: raw
+            },
+            skip_validations: true,
+            validate_topic: true # This is a very weird API
           )
         end
       elsif params["status"] == "resolved"
@@ -197,14 +201,12 @@ module Jobs
       Time.parse(t).strftime("%Y-%m-%d %H:%M:%S UTC")
     end
 
-    def topic_title(params, topic: nil)
+    def topic_title(params, alert_history: nil)
       params["groupLabels"]
 
       firing =
-        if topic
-          key = DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD
-
-          (topic.custom_fields[key]["alerts"] || []).all? do |alert|
+        if alert_history
+          alert_history.all? do |alert|
             is_firing?(params["status"])
           end
         else

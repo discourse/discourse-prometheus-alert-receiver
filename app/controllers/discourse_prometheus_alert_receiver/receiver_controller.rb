@@ -58,7 +58,6 @@ module DiscoursePrometheusAlertReceiver
 
       Jobs.enqueue(:process_alert,
         token: token,
-        receiver: receiver,
         params: params.permit!.to_h
       )
 

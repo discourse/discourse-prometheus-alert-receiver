@@ -1,7 +1,13 @@
 module Jobs
   class ProcessAlert < Jobs::Base
     def execute(args)
-      receiver = args[:receiver]
+      token = args[:token]
+
+      receiver = PluginStore.get(
+        ::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
+        token
+      )
+
       params = args[:params]
 
       Topic.transaction do
@@ -13,7 +19,7 @@ module Jobs
       end
 
       PluginStore.set(::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
-        args[:token], receiver
+        token, receiver
       )
     end
 

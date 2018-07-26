@@ -381,7 +381,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                   "id" => "somethingfunny",
                 },
                 "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
-                "startsAt" => "2020-01-02T03:04:05.12345678Z",
+                "startsAt" => "2020-01-02T03:04:05.12345679Z",
                 "endsAt" => "2020-01-02T09:08:07.09876543Z",
               }
             ],

@@ -2,13 +2,12 @@ module Jobs
   class ProcessAlert < Jobs::Base
     def execute(args)
       token = args[:token]
+      params = args[:params]
 
       receiver = PluginStore.get(
         ::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
         token
       )
-
-      params = JSON.parse(args[:params])
 
       Topic.transaction do
         if receiver[:assignee_group_id]
@@ -245,7 +244,8 @@ module Jobs
           Rails.logger.debug("DPAR") { "Processing webhook alert #{alert.inspect}" }
 
           stored_alert = new_history.find do |p|
-            p['id'] == alert['labels']['id'] && p['starts_at'] == alert['startsAt']
+            p['id'] == alert['labels']['id'] &&
+              DateTime.parse(p['starts_at']).to_s == DateTime.parse(alert['startsAt']).to_s
           end
 
           if stored_alert.nil? && is_firing?(alert['status'])

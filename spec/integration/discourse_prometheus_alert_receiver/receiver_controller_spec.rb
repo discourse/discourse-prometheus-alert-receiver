@@ -602,6 +602,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
       context "firing alert for a groupkey referencing a closed topic" do
         before do
+          closed_topic.update!(
+            created_at: DateTime.new(2018, 7, 27, 19, 33, 44)
+          )
+
           closed_topic.custom_fields['prom_alert_history'] = {
             'alerts' => [
               {
@@ -691,7 +695,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(keyed_topic.assigned_to_user.id).to eq(assignee.id)
 
           expect(keyed_topic.posts.first.raw).to include(
-            "http://test.localhost/t/#{closed_topic.id}"
+            "[Previous alert topic created `2018-07-27 19:33:44 UTC`.](http://test.localhost/t/#{closed_topic.id})"
           )
         end
       end

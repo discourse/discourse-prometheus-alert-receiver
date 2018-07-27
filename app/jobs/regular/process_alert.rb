@@ -233,7 +233,10 @@ module Jobs
 
     def prev_topic_link(topic_id)
       return "" if topic_id.nil?
-      "([Previous topic for this alert](#{Discourse.base_url}/t/#{topic_id}).)\n\n"
+      created_at = Topic.where(id: topic_id).pluck(:created_at).first
+      return "" unless created_at
+
+      "([Previous alert topic created `#{created_at.to_formatted_s}`.](#{Discourse.base_url}/t/#{topic_id}))\n\n"
     end
 
     def is_firing?(status)

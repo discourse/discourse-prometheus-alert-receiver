@@ -52,8 +52,6 @@ module Jobs
       )
 
       if topic
-        Rails.logger.debug("DPAR") { "Using existing topic #{topic.id}" }
-
         prev_alert_history = begin
           key = ::DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD
           topic.custom_fields[key]&.dig('alerts') || []
@@ -72,7 +70,6 @@ module Jobs
         post = topic.posts.first
 
         if post.raw.chomp != raw.chomp || topic.title != title
-          Rails.logger.debug("DPAR") { "Alert history has changed; revising first post" }
           post = topic.posts.first
 
           PostRevisor.new(post, topic).revise!(
@@ -86,14 +83,11 @@ module Jobs
           )
         end
       elsif params["status"] == "resolved"
-        Rails.logger.debug("DPAR") { "Received resolved alert on closed topic; ignoring" }
         # We don't care about resolved alerts if we've closed the topic
         return
       else
-        Rails.logger.debug("DPAR") { "New topic creation required" }
         alert_history = update_alert_history([], params["alerts"])
         topic = create_new_topic(receiver, params, alert_history)
-        Rails.logger.debug("DPAR") { "Created new topic, id=#{topic.id}" }
         receiver[:topic_map][params["groupKey"]] = topic.id
       end
 
@@ -112,12 +106,10 @@ module Jobs
         skip_validations: true
       ).topic.tap do |t|
         if params["commonAnnotations"]["topic_assignee"]
-          Rails.logger.debug("DPAR") { "Forcing assignment of user #{params["commonAnnotations"]["topic_assignee"].inspect}" }
           assignee = User.find_by(username: params["commonAnnotations"]["topic_assignee"])
         end
 
         if receiver["topic_map"][params["groupKey"]]
-          Rails.logger.debug("DPAR") { "Linking to previous topic #{receiver["topic_map"][params["groupKey"]]}" }
           t.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD] = receiver["topic_map"][params["groupKey"]]
           t.save_custom_fields
         end
@@ -245,8 +237,6 @@ module Jobs
       # Sadly, this is the easiest way to get a deep dup
       JSON.parse(previous_history.to_json).tap do |new_history|
         active_alerts.sort_by { |a| a['startsAt'] }.each do |alert|
-          Rails.logger.debug("DPAR") { "Processing webhook alert #{alert.inspect}" }
-
           stored_alert = new_history.find do |p|
             p['id'] == alert['labels']['id'] &&
               DateTime.parse(p['starts_at']).to_s == DateTime.parse(alert['startsAt']).to_s
@@ -263,10 +253,7 @@ module Jobs
             new_history << stored_alert
           end
 
-          Rails.logger.debug("DPAR") { "Stored alert is #{stored_alert.inspect}" }
-
           if alert['status'] == "resolved" && stored_alert && stored_alert['ends_at'].nil?
-            Rails.logger.debug("DPAR") { "Marking alert as resolved" }
             stored_alert['ends_at'] = alert['endsAt']
             stored_alert['status'] = alert['status']
           end

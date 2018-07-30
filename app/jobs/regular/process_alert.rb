@@ -9,12 +9,10 @@ module Jobs
         token
       )
 
-      Topic.transaction do
-        if receiver[:assignee_group_id]
-          assigned_topic(receiver, params)
-        else
-          add_post(receiver, params)
-        end
+      if receiver[:assignee_group_id]
+        assigned_topic(receiver, params)
+      else
+        add_post(receiver, params)
       end
 
       PluginStore.set(::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,

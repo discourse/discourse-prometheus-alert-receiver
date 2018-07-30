@@ -38,6 +38,22 @@ after_initialize do
       .destroy_all
   end
 
+  add_class_method(:topic, :firing_alerts) do
+    joins(:_custom_fields)
+      .where("
+        topic_custom_fields.value LIKE '%\"status\":\"firing\"%'
+        AND topic_custom_fields.name = ?
+      ", DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD)
+  end
+
+  add_to_serializer(:site, :firing_alerts_count) do
+    Topic.firing_alerts.count
+  end
+
+  add_to_serializer(:site, :include_firing_alerts_count?) do
+    scope.user
+  end
+
   require_dependency "admin_constraint"
 
   ::DiscoursePrometheusAlertReceiver::Engine.routes.draw do

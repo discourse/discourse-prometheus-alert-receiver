@@ -237,9 +237,14 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
 
         it "should create the right topic" do
-          expect do
-            post "/prometheus/receiver/#{token}", params: payload
-          end.to change { Topic.count }.by(1)
+          messages = MessageBus.track_publish('/alert-receiver') do
+            expect do
+              post "/prometheus/receiver/#{token}", params: payload
+            end.to change { Topic.count }.by(1)
+          end
+
+          expect(response.status).to eq(200)
+          expect(messages.first.data[:firing_alerts_count]).to eq(1)
 
           expect(topic.category).to eq(category)
 
@@ -391,11 +396,16 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         let(:topic) { Fabricate(:post).topic }
 
         it "updates the existing topic" do
-          expect do
-            post "/prometheus/receiver/#{token}", params: payload
-          end.to_not change { Topic.count }
+          messages = MessageBus.track_publish('/alert-receiver') do
+            expect do
+              post "/prometheus/receiver/#{token}", params: payload
+            end.to_not change { Topic.count }
+          end
 
           topic.reload
+
+          expect(response.status).to eq(200)
+          expect(messages.first.data[:firing_alerts_count]).to eq(1)
 
           expect(topic.title).to eq(
             "Alert investigation required: AnAlert is on the loose"

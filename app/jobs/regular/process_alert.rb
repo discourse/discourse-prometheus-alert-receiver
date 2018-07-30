@@ -96,6 +96,10 @@ module Jobs
       # a single-element hash.
       topic.custom_fields[::DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD] = { 'alerts' => alert_history }
       topic.save_custom_fields
+
+      MessageBus.publish("/alert-receiver",
+        firing_alerts_count: Topic.firing_alerts.count
+      )
     end
 
     def create_new_topic(receiver, params, alert_history)

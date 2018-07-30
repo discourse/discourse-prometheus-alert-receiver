@@ -54,6 +54,20 @@ after_initialize do
     scope.user
   end
 
+  TopicQuery.add_custom_filter(
+    DiscoursePrometheusAlertReceiver::PLUGIN_NAME
+  ) do |results, topic_query|
+
+    options = topic_query.options
+    category_id = Category.where(slug: 'alerts').pluck(:id).first
+
+    if options[:category_id] == category_id  && options[:status] == 'firing'
+      results = results.firing_alerts
+    end
+
+    results
+  end
+
   require_dependency "admin_constraint"
 
   ::DiscoursePrometheusAlertReceiver::Engine.routes.draw do

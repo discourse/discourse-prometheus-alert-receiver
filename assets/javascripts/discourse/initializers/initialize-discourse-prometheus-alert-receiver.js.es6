@@ -20,7 +20,7 @@ export default {
       api.addNavigationBarItem({
         name: "alerts-category",
         site,
-        href: "/c/alerts",
+        href: "/c/alerts?status=firing",
         customFilter: (category, _) => {
           return (category && category.get("slug") !== "alerts") || !category;
         }

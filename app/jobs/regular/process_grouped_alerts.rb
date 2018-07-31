@@ -4,7 +4,7 @@ module Jobs
 
     def execute(args)
       token = args[:token]
-      data = args[:data]
+      data = JSON.parse(args[:data])
       external_url = args[:external_url]
 
       receiver = PluginStore.get(
@@ -74,7 +74,7 @@ module Jobs
         stored = active_alerts.find do |active_alert|
           active_alert["labels"]["id"] == alert["id"] &&
             active_alert["startsAt"] == alert["starts_at"] &&
-            is_suppressed?(active_alert["status"]["state"])
+            active_alert["status"]["state"] == "suppressed"
         end
 
         alert["status"] = stored["status"]["state"] if stored

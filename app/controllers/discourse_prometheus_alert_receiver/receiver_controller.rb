@@ -6,7 +6,11 @@ module DiscoursePrometheusAlertReceiver
     skip_before_action :check_xhr,
                        :verify_authenticity_token,
                        :redirect_to_login_if_required,
-                       only: [:generate_receiver_url, :receive]
+                       only: [
+                         :generate_receiver_url,
+                         :receive,
+                         :receive_grouped_alerts
+                       ]
 
     def generate_receiver_url
       params.require(:category_id)
@@ -44,24 +48,42 @@ module DiscoursePrometheusAlertReceiver
     end
 
     def receive
-      token = params.require(:token)
-
-      receiver = PluginStore.get(
-        ::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
-        token
-      )
-
-      raise Discourse::InvalidParameters unless receiver
-
-      category = Category.find_by(id: receiver[:category_id])
-      raise Discourse::InvalidParameters unless category
+      find_receiver_from_token
 
       Jobs.enqueue(:process_alert,
-        token: token,
+        token: @token,
         params: params.permit!.to_h
       )
 
       render json: success_json
+    end
+
+    def receive_grouped_alerts
+      find_receiver_from_token
+
+      Jobs.enqueue(:process_grouped_alerts,
+        token: @token,
+        data: params[:data],
+        external_url: params[:externalURL]
+      )
+
+      render json: success_json
+    end
+
+    private
+
+    def find_receiver_from_token
+      @token = params.require(:token)
+
+      @receiver = PluginStore.get(
+        ::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
+        @token
+      )
+
+      raise Discourse::InvalidParameters unless @receiver
+
+      category = Category.find_by(id: @receiver[:category_id])
+      raise Discourse::InvalidParameters unless category
     end
   end
 end

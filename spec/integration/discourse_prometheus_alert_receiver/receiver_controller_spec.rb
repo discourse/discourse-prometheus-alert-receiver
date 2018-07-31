@@ -6,11 +6,12 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
   let(:admin) { Fabricate(:admin) }
   let(:response_body) { response.body }
   let(:parsed_response_body) { JSON.parse(response_body) }
+  let(:plugin_name) { DiscoursePrometheusAlertReceiver::PLUGIN_NAME }
 
   describe "#generate_receiver_url" do
     let(:receiver_url) { parsed_response_body['url'] }
     let(:receiver_token) { parsed_response_body['url'].split('/').last }
-    let(:receiver) { PluginStore.get(::DiscoursePrometheusAlertReceiver::PLUGIN_NAME, receiver_token) }
+    let(:receiver) { PluginStore.get(plugin_name, receiver_token) }
 
     describe 'as an anonymous user' do
       it "should pretend we don't exist" do
@@ -88,13 +89,191 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
     end
   end
 
+  describe '#receive_grouped_alerts' do
+    let(:token) do
+      '557fa3ef557b49451dc9e90e6a7ec1e888937983bee016f5ea52310bd4721983'
+    end
+
+    before do
+      SiteSetting.queue_jobs = false
+    end
+
+    describe 'when token is missing or too short' do
+      it "should indicate the resource wasn't found" do
+        post "/prometheus/receiver/grouped/alerts"
+        expect(response.status).to eq(404)
+
+        post "/prometheus/receiver/grouped/alerts/asdasd"
+        expect(response.status).to eq(404)
+      end
+    end
+
+    describe 'when token is invalid' do
+      it "should indicate the request was bad" do
+        post "/prometheus/receiver/grouped/alerts/#{token}"
+        expect(response.status).to eq(400)
+      end
+    end
+
+    describe 'for a valid token' do
+      let(:group_key) { "{}/{foo=\"bar\"}:{baz=\"wombat\"}" }
+      let(:topic) { Fabricate(:topic, category: category) }
+      let!(:first_post) { Fabricate(:post, topic: topic) }
+      let(:topic_map) { { group_key => topic.id } }
+
+      before do
+        PluginStore.set(plugin_name, token,
+          category_id: category.id,
+          assignee_group_id: assignee_group.id,
+          created_at: Time.zone.now,
+          created_by: admin.id,
+          topic_map: topic_map
+        )
+      end
+
+      describe 'for an active alert' do
+        before do
+          topic.custom_fields['prom_alert_history'] = {
+            'alerts' => [
+              {
+                'id' => 'somethingfunny',
+                'starts_at' => "2018-07-24T23:25:31.363742333Z",
+                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
+                'status' => 'firing'
+              },
+              {
+                'id' => 'somethingnotfunny',
+                'starts_at' => "2018-07-24T23:25:31.363742333Z",
+                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
+                'status' => 'firing'
+              },
+            ]
+          }
+
+          topic.save_custom_fields(true)
+        end
+
+        describe 'when payload includes silenced alerts' do
+          let(:payload) do
+            {
+              "status" => "success",
+              "externalURL" => "supposed.to.be.a.url",
+              "data" => [
+                {
+                  "labels" => {
+                    "alertname" => "JobDown",
+                    "datacenter" => "somedatacenter"
+                  },
+                  "groupKey" => group_key,
+                  "blocks" => [
+                    {
+                      "routeOpts" => {
+                        "receiver" => "somereceiver",
+                        "groupBy" => [
+                          "alertname",
+                          "datacenter"
+                        ],
+                        "groupWait" => 30000000000,
+                        "groupInterval" => 30000000000,
+                        "repeatInterval" => 3600000000000
+                      },
+                      "alerts" => [
+                        {
+                          "labels" => {
+                            "alertname" => "somealertname",
+                            "datacenter" => "somedatacenter",
+                            'id' => 'somethingnotfunny',
+                            "instance" => "someinstance",
+                            "job" => "somejob",
+                            "notify" => "live"
+                          },
+                          "annotations" => {
+                            "topic_body" => "some body",
+                            "topic_title" => "some title"
+                          },
+                          "startsAt" => "2018-07-24T23:25:31.363742333Z",
+                          "endsAt" => "0001-01-01T00:00:00Z",
+                          "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
+                          "status" => {
+                            "state" => "suppressed",
+                            "silencedBy" => [
+                              "1de62db1-ac72-48d8-b2d0-7ce0e8acdcb1"
+                            ],
+                            "inhibitedBy" => nil
+                          },
+                          "receivers" => nil,
+                          "fingerprint" => "09aae3ea59ed5a65"
+                        },
+                        {
+                          "labels" => {
+                            "alertname" => "somealertname",
+                            "datacenter" => "somedatacenter",
+                            'id' => 'somethingfunny',
+                            "instance" => "someinstance",
+                            "job" => "somejob",
+                            "notify" => "live"
+                          },
+                          "annotations" => {
+                            "topic_body" => "some body",
+                            "topic_title" => "some title"
+                          },
+                          "startsAt" => "2018-07-24T23:25:31.363742333Z",
+                          "endsAt" => "0001-01-01T00:00:00Z",
+                          "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
+                          "status" => {
+                            "state" => "suppressed",
+                            "silencedBy" => [
+                              "1de62db1-ac72-48d8-b2d0-7ce0e8acdcb1"
+                            ],
+                            "inhibitedBy" => nil
+                          },
+                          "receivers" => nil,
+                          "fingerprint" => "09aae3ea59ed5a65"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          end
+
+          it 'should update the alerts correctly' do
+            post "/prometheus/receiver/grouped/alerts/#{token}", params: payload
+
+            expect(response.status).to eq(200)
+
+            key = DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD
+            alerts = topic.reload.custom_fields[key]["alerts"]
+
+            expect(alerts.all? { |alert| alert['status'] == "suppressed" })
+              .to eq(true)
+
+            expect(topic.reload.title).to eq("somedatacentersome title")
+
+            raw = first_post.reload.raw
+
+            [
+              "supposed.to.be.a.url",
+              "# :shushing_face: Silenced Alerts",
+              "[somethingfunny (active since 2018-07-24 23:25:31 UTC)]",
+              "[somethingnotfunny (active since 2018-07-24 23:25:31 UTC)]"
+            ].each do |content|
+              expect(raw).to include(content)
+            end
+          end
+        end
+      end
+    end
+  end
+
   describe "#receive" do
     let(:token) do
       '557fa3ef557b49451dc9e90e6a7ec1e888937983bee016f5ea52310bd4721983'
     end
 
     let(:receiver) do
-      PluginStore.get(::DiscoursePrometheusAlertReceiver::PLUGIN_NAME, token)
+      PluginStore.get(plugin_name, token)
     end
 
     before do
@@ -134,7 +313,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
       before do
         SiteSetting.login_required = true
 
-        PluginStore.set(::DiscoursePrometheusAlertReceiver::PLUGIN_NAME, token,
+        PluginStore.set(plugin_name, token,
           category_id: category.id,
           created_at: Time.zone.now,
           created_by: admin.id
@@ -157,7 +336,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(post.raw).to eq(raw)
 
           topic_id = PluginStore.get(
-            ::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
+            plugin_name,
             token
           )[:topic_id]
 
@@ -190,7 +369,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
       before do
         SiteSetting.assign_enabled = true
 
-        PluginStore.set(::DiscoursePrometheusAlertReceiver::PLUGIN_NAME, token,
+        PluginStore.set(plugin_name, token,
           category_id: category.id,
           assignee_group_id: assignee_group.id,
           created_at: Time.zone.now,

@@ -6,7 +6,9 @@
 after_initialize do
   [
     '../app/controllers/discourse_prometheus_alert_receiver/receiver_controller.rb',
+    '../app/jobs/concerns/alert_post_mixin.rb',
     '../app/jobs/regular/process_alert.rb',
+    '../app/jobs/regular/process_grouped_alerts.rb',
   ].each { |path| load File.expand_path(path, __FILE__) }
 
   module ::DiscoursePrometheusAlertReceiver
@@ -71,7 +73,9 @@ after_initialize do
   require_dependency "admin_constraint"
 
   ::DiscoursePrometheusAlertReceiver::Engine.routes.draw do
-    post "/receiver/:token" => "receiver#receive", token: /[a-f0-9]{64}/, as: :receive
+    token_format = /[a-f0-9]{64}/
+    post "/receiver/:token" => "receiver#receive", token: token_format, as: :receive
+    post "/receiver/grouped/alerts/:token" => "receiver#receive_grouped_alerts", token: token_format, as: :receive_grouped_alerts
     post "/receiver/generate" => "receiver#generate_receiver_url", constraints: AdminConstraint.new
   end
 

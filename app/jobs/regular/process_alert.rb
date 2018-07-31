@@ -1,5 +1,7 @@
 module Jobs
   class ProcessAlert < Jobs::Base
+    include AlertPostMixin
+
     def execute(args)
       token = args[:token]
       params = args[:params]
@@ -60,13 +62,20 @@ module Jobs
         alert_history = update_alert_history(prev_alert_history, params["alerts"])
 
         raw = first_post_body(
-          receiver,
-          params,
-          alert_history,
-          topic.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD]
+          receiver: receiver,
+          external_url: params["externalURL"],
+          topic_body: params["commonAnnotations"]["topic_body"],
+          alert_history: alert_history,
+          prev_topic_id: topic.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD]
         )
 
-        title = topic_title(params, alert_history: alert_history)
+        title = topic_title(
+          alert_history: alert_history,
+          datacenter: params["commonLabels"]["datacenter"],
+          topic_title: params["commonAnnotations"]["topic_title"] ||
+            "alert: #{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}"
+        )
+
         post = topic.posts.first
 
         if post.raw.chomp != raw.chomp || topic.title != title
@@ -104,9 +113,20 @@ module Jobs
 
     def create_new_topic(receiver, params, alert_history)
       PostCreator.create!(Discourse.system_user,
-        raw: first_post_body(receiver, params, alert_history, receiver["topic_map"][params["groupKey"]]),
+        raw: first_post_body(
+          receiver: receiver,
+          external_url: params["externalURL"],
+          topic_body: params["commonAnnotations"]["topic_body"],
+          alert_history: alert_history,
+          prev_topic_id: receiver["topic_map"][params["groupKey"]]
+        ),
         category: Category.where(id: receiver[:category_id]).pluck(:id).first,
-        title: topic_title(params),
+        title: topic_title(
+          firing: params["status"],
+          datacenter: params["commonLabels"]["datacenter"],
+          topic_title: params["commonAnnotations"]["topic_title"] ||
+            "alert: #{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}"
+        ),
         skip_validations: true
       ).topic.tap do |t|
         if params["commonAnnotations"]["topic_assignee"]
@@ -130,111 +150,6 @@ module Jobs
     def random_group_member(receiver)
       group = Group.find_by(id: receiver[:assignee_group_id])
       group.users.sort_by { rand }.first
-    end
-
-    def first_post_body(receiver, params, alert_history, prev_topic_id)
-      <<~BODY
-      #{params["externalURL"]}
-
-      #{params["commonAnnotations"]["topic_body"] || ""}
-
-      #{prev_topic_link(prev_topic_id)}
-
-      #{render_alerts(alert_history)}
-      BODY
-    end
-
-    def render_alerts(alert_history)
-      firing_alerts = []
-      resolved_alerts = []
-
-      alert_history.each do |alert|
-        status = alert['status']
-
-        if is_firing?(status)
-          firing_alerts << alert
-        elsif status == 'resolved'
-          resolved_alerts << alert
-        end
-      end
-
-      output = ""
-
-      if firing_alerts.length > 0
-        output += "# :fire: Firing Alerts\n\n"
-
-        output += firing_alerts.map do |alert|
-          " * [#{alert_label(alert)}](#{alert_link(alert)})"
-        end.join("\n")
-      end
-
-      if resolved_alerts.length > 0
-        output += "\n\n# Alert History\n\n"
-
-        output += resolved_alerts.map do |alert|
-          " * [#{alert_label(alert)}](#{alert_link(alert)})"
-        end.join("\n")
-      end
-
-      output
-    end
-
-    def alert_label(alert)
-      "#{alert['id']} (#{alert_time_range(alert)})"
-    end
-
-    def alert_time_range(alert)
-      if alert['ends_at']
-        "#{friendly_time(alert['starts_at'])} to #{friendly_time(alert['ends_at'])}"
-      else
-        "active since #{friendly_time(alert['starts_at'])}"
-      end
-    end
-
-    def friendly_time(t)
-      Time.parse(t).strftime("%Y-%m-%d %H:%M:%S UTC")
-    end
-
-    def topic_title(params, alert_history: nil)
-      params["groupLabels"]
-
-      firing =
-        if alert_history
-          alert_history.all? do |alert|
-            is_firing?(params["status"])
-          end
-        else
-          is_firing?(params["status"])
-        end
-
-      (firing ? ":fire: " : "") +
-        (params["commonLabels"]["datacenter"] || "") +
-        (params["commonAnnotations"]["topic_title"] || "alert: #{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}")
-    end
-
-    def alert_link(alert)
-      url = URI(alert['graph_url'])
-      url_params = CGI.parse(url.query)
-
-      begin_t = Time.parse(alert['starts_at'])
-      end_t   = Time.parse(alert['ends_at']) rescue Time.now
-      url_params['g0.range_input'] = "#{(end_t - begin_t).to_i + 600}s"
-      url_params['g0.end_input']   = "#{end_t.strftime("%Y-%m-%d %H:%M")}"
-      url.query = URI.encode_www_form(url_params)
-
-      url.to_s
-    end
-
-    def prev_topic_link(topic_id)
-      return "" if topic_id.nil?
-      created_at = Topic.where(id: topic_id).pluck(:created_at).first
-      return "" unless created_at
-
-      "([Previous alert topic created `#{created_at.to_formatted_s}`.](#{Discourse.base_url}/t/#{topic_id}))\n\n"
-    end
-
-    def is_firing?(status)
-      status == "firing".freeze
     end
 
     def update_alert_history(previous_history, active_alerts)

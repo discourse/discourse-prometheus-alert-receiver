@@ -1,0 +1,3 @@
+en:
+  site_settings:
+    prometheus_alert_receiver_opsgenie_api_key: "OpsGenie integrations API key to fetch schedules which will be used for assigning alerts"

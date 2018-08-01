@@ -1,0 +1,2 @@
+plugins:
+  prometheus_alert_receiver_opsgenie_api_key: ''

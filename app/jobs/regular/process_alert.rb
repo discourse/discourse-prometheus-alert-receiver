@@ -138,18 +138,22 @@ module Jobs
           t.save_custom_fields
         end
 
-        assignee ||= random_group_member(receiver)
+        assignee ||= begin
+          if user_on_rotation = OpsgenieSchedule.users_on_rotation.sample
+            assignee = User.find_by_username_or_email(user_on_rotation)
+          else
+            random_group_member(receiver)
+          end
+        end
 
-        # Force assign to TGX first
-        # See https://dev.discourse.org/t/feeding-most-alerts-into-dev-rather-than-chat/3416/22?u=tgxworld
-        assignee = User.find_by_username('tgxworld') if Rails.env.production?
-        TopicAssigner.new(t, Discourse.system_user).assign(assignee) unless assignee.nil?
+        unless assignee.nil?
+          TopicAssigner.new(t, Discourse.system_user).assign(assignee)
+        end
       end
     end
 
     def random_group_member(receiver)
-      group = Group.find_by(id: receiver[:assignee_group_id])
-      group.users.sort_by { rand }.first
+      Group.find_by(id: receiver[:assignee_group_id]).users.sample
     end
 
     def update_alert_history(previous_history, active_alerts)

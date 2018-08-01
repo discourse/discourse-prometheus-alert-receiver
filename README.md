@@ -63,6 +63,7 @@ randomly-selected member of a specified group.
     assignee does not need to be a member of the group that assignees are
     normally chosen from.
 
+  * **`description`** -- the description will be displayed under each alert.
 
 ## TODO
 

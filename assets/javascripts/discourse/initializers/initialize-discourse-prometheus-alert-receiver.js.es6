@@ -21,7 +21,7 @@ export default {
         name: "alerts-category",
         site,
         href: "/c/alerts?status=firing",
-        customFilter: (category, _) => {
+        customFilter: category => {
           if (site.get("firing_alerts_count") <= 0) return false;
           return !category || (category && category.get("slug") !== "alerts");
         }

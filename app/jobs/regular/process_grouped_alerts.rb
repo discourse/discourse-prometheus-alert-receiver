@@ -71,13 +71,16 @@ module Jobs
 
     def silence_alerts(stored_alerts, active_alerts)
       stored_alerts.each do |alert|
-        stored = active_alerts.find do |active_alert|
+        active = active_alerts.find do |active_alert|
           active_alert["labels"]["id"] == alert["id"] &&
             active_alert["startsAt"] == alert["starts_at"] &&
             active_alert["status"]["state"] == "suppressed"
         end
 
-        alert["status"] = stored["status"]["state"] if stored
+        if active
+          alert["description"] = active.dig("annotations", "description")
+          alert["status"] = active["status"]["state"]
+        end
       end
     end
   end

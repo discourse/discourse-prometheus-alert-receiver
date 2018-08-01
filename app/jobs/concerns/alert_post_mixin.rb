@@ -27,7 +27,10 @@ module AlertPostMixin
       output += "# :fire: Firing Alerts\n\n"
 
       output += firing_alerts.map do |alert|
-        " * [#{alert_label(alert)}](#{alert_link(alert)})"
+        <<~BODY
+        #{alert_item(alert)}
+        #{alert['description']}
+        BODY
       end.join("\n")
     end
 
@@ -35,19 +38,23 @@ module AlertPostMixin
       output += "\n\n# :shushing_face: Silenced Alerts\n\n"
 
       output += silenced_alerts.map do |alert|
-        " * [#{alert_label(alert)}](#{alert_link(alert)})"
+        <<~BODY
+        #{alert_item(alert)}
+        #{alert['description']}
+        BODY
       end.join("\n")
     end
 
     if resolved_alerts.length > 0
       output += "\n\n# Alert History\n\n"
-
-      output += resolved_alerts.map do |alert|
-        " * [#{alert_label(alert)}](#{alert_link(alert)})"
-      end.join("\n")
+      output += resolved_alerts.map { |alert| alert_item(alert) }.join("\n")
     end
 
     output
+  end
+
+  def alert_item(alert)
+    " * [#{alert_label(alert)}](#{alert_link(alert)})"
   end
 
   def alert_label(alert)

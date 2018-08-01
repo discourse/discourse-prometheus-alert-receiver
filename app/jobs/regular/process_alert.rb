@@ -161,15 +161,20 @@ module Jobs
               DateTime.parse(p['starts_at']).to_s == DateTime.parse(alert['startsAt']).to_s
           end
 
+          alert_description = alert.dig('annotations', 'description')
+
           if stored_alert.nil? && is_firing?(alert['status'])
             stored_alert = {
               'id' => alert['labels']['id'],
               'starts_at' => alert['startsAt'],
               'graph_url' => alert['generatorURL'],
-              'status' => alert['status']
+              'status' => alert['status'],
+              'description' => alert_description
             }
 
             new_history << stored_alert
+          else
+            stored_alert['description'] = alert_description
           end
 
           if alert['status'] == "resolved" && stored_alert && stored_alert['ends_at'].nil?

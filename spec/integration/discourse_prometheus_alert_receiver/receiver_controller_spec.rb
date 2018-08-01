@@ -8,6 +8,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
   let(:parsed_response_body) { JSON.parse(response_body) }
   let(:plugin_name) { DiscoursePrometheusAlertReceiver::PLUGIN_NAME }
 
+  let(:custom_field_key) do
+    DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD
+  end
+
   describe "#generate_receiver_url" do
     let(:receiver_url) { parsed_response_body['url'] }
     let(:receiver_token) { parsed_response_body['url'].split('/').last }
@@ -133,7 +137,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
       describe 'for an active alert' do
         before do
-          topic.custom_fields['prom_alert_history'] = {
+          topic.custom_fields[custom_field_key] = {
             'alerts' => [
               {
                 'id' => 'somethingfunny',
@@ -188,6 +192,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                             "notify" => "live"
                           },
                           "annotations" => {
+                            "description" => "some description",
                             "topic_body" => "some body",
                             "topic_title" => "some title"
                           },
@@ -214,6 +219,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                             "notify" => "live"
                           },
                           "annotations" => {
+                            "description" => "some description",
                             "topic_body" => "some body",
                             "topic_title" => "some title"
                           },
@@ -261,6 +267,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             ].each do |content|
               expect(raw).to include(content)
             end
+
+            expect(
+              topic.custom_fields[custom_field_key]['alerts'].first['description']
+            ).to eq('some description')
           end
         end
       end
@@ -399,6 +409,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "alerts" => [
               {
+                "annotations" => {
+                  "description" => "some description"
+                },
                 "status" => "firing",
                 "labels" => {
                   "id" => "somethingfunny",
@@ -433,13 +446,14 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
           expect(receiver["topic_map"][group_key]).to eq(topic.id)
 
-          expect(topic.custom_fields['prom_alert_history']['alerts']).to eq(
+          expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
             [
               {
                 'id' => "somethingfunny",
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'status' => 'firing'
+                'status' => 'firing',
+                'description' => 'some description'
               },
             ]
           )
@@ -483,6 +497,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "externalURL" => "supposed.to.be.a.url",
             "alerts" => [
               {
+                "annotations" => {
+                  "description" => "some description"
+                },
                 "status" => "firing",
                 "labels" => {
                   "id" => "somethingfunny",
@@ -509,6 +526,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           raw = topic.posts.first.raw
 
           expect(raw).to match(/# :fire: Firing Alerts/m)
+          expect(raw).to include("some description")
           expect(raw).to include("supposed.to.be.a.url")
 
           expect(raw).to include(
@@ -521,7 +539,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
       context "a resolving alert on an existing groupKey" do
         before do
-          topic.custom_fields['prom_alert_history'] = {
+          topic.custom_fields[custom_field_key] = {
             'alerts' => [
               {
                 'id' => 'somethingfunny',
@@ -560,6 +578,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "alerts" => [
               {
+                "annotations" => {
+                  "description" => "some description"
+                },
                 "status" => "resolved",
                 "labels" => {
                   "id" => "somethingfunny",
@@ -590,14 +611,15 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "Alert investigation required: AnAlert is on the loose"
           )
 
-          expect(topic.custom_fields['prom_alert_history']['alerts']).to eq(
+          expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
             [
               {
                 'id' => "somethingfunny",
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'ends_at' => "2020-01-02T09:08:07.09876543Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'status' => 'resolved'
+                'status' => 'resolved',
+                'description' => 'some description'
               },
               {
                 'id' => 'somethingnotfunny',
@@ -626,7 +648,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
       context "a new firing alert on an existing groupKey" do
         before do
-          topic.custom_fields['prom_alert_history'] = {
+          topic.custom_fields[custom_field_key] = {
             'alerts' => [
               {
                 'id' => 'oldalert',
@@ -660,6 +682,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "alerts" => [
               {
+                "annotations" => {
+                  "description" => "some description"
+                },
                 "status" => "firing",
                 "labels" => {
                   "id" => "oldalert",
@@ -668,6 +693,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 "startsAt" => "2020-01-02T03:04:05.12345678Z",
               },
               {
+                "annotations" => {
+                  "description" => "some description"
+                },
                 "status" => "firing",
                 "labels" => {
                   "id" => "newalert",
@@ -692,19 +720,21 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             ":fire: Alert investigation required: AnAlert is on the loose"
           )
 
-          expect(topic.custom_fields['prom_alert_history']['alerts']).to eq(
+          expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
             [
               {
                 'id' => "oldalert",
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'status' => 'firing'
+                'status' => 'firing',
+                'description' => 'some description'
               },
               {
                 'id' => "newalert",
                 'starts_at' => "2020-12-31T23:59:59.75645342Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'status' => 'firing'
+                'status' => 'firing',
+                'description' => 'some description'
               },
             ]
           )
@@ -718,7 +748,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
       context "a repeated alert" do
         before do
-          topic.custom_fields['prom_alert_history'] = {
+          topic.custom_fields[custom_field_key] = {
             'alerts' => [
               {
                 'id' => 'somethingfunny',
@@ -756,6 +786,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "alerts" => [
               {
+                "annotations" => {
+                  "description" => "some description"
+                },
                 "status" => "firing",
                 "labels" => {
                   "id" => "somethingfunny",
@@ -776,13 +809,14 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
           topic.reload
 
-          expect(topic.custom_fields['prom_alert_history']['alerts']).to eq(
+          expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
             [
               {
                 'id' => "somethingfunny",
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'status' => 'firing'
+                'status' => 'firing',
+                'description' => 'some description'
               },
             ]
           )
@@ -795,7 +829,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             created_at: DateTime.new(2018, 7, 27, 19, 33, 44)
           )
 
-          closed_topic.custom_fields['prom_alert_history'] = {
+          closed_topic.custom_fields[custom_field_key] = {
             'alerts' => [
               {
                 'id' => 'somethingfunny',
@@ -828,6 +862,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "alerts" => [
               {
+                "annotations" => {
+                  "description" => "some description"
+                },
                 "status" => "firing",
                 "labels" => {
                   "id" => "anotheralert",
@@ -854,12 +891,12 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             post "/prometheus/receiver/#{token}", params: payload
           end.to_not change { closed_topic.reload.posts.first.revisions.count }
 
-          expect(closed_topic.custom_fields['prom_alert_history']['alerts']).to eq(
+          expect(closed_topic.custom_fields[custom_field_key]['alerts']).to eq(
             [
               {
                 'id' => "somethingfunny",
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
+                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus"
               },
             ]
           )
@@ -870,13 +907,14 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
           expect(receiver["topic_map"][group_key]).to eq(keyed_topic.id)
 
-          expect(keyed_topic.custom_fields['prom_alert_history']['alerts']).to eq(
+          expect(keyed_topic.custom_fields[custom_field_key]['alerts']).to eq(
             [
               {
                 'id' => "anotheralert",
                 'starts_at' => "2020-12-31T23:59:59.98765Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'status' => 'firing'
+                'status' => 'firing',
+                'description' => 'some description'
               },
             ]
           )
@@ -908,6 +946,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "alerts" => [
               {
+                "annotations" => {
+                  "description" => "some description"
+                },
                 "status" => "resolved",
                 "labels" => {
                   "id" => "somethingfunny",
@@ -925,7 +966,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         let(:topic_map) { { group_key => topic.id } }
 
         before do
-          topic.custom_fields['prom_alert_history'] = {
+          topic.custom_fields[custom_field_key] = {
             'alerts' => [
               {
                 'id' => 'somethingfunny',
@@ -992,6 +1033,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "alerts" => [
               {
+                "annotations" => {
+                  "description" => "some description"
+                },
                 "status" => "firing",
                 "labels" => {
                   "id" => "somethingfunny",

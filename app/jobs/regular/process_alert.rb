@@ -162,7 +162,7 @@ module Jobs
         active_alerts.sort_by { |a| a['startsAt'] }.each do |alert|
           stored_alert = new_history.find do |p|
             p['id'] == alert['labels']['id'] &&
-              p['starts_at'] == alert['startsAt']
+              DateTime.parse(p['starts_at']).to_s == DateTime.parse(alert['startsAt']).to_s
           end
 
           alert_description = alert.dig('annotations', 'description')

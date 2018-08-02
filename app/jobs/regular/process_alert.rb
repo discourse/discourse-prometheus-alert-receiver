@@ -162,12 +162,13 @@ module Jobs
         active_alerts.sort_by { |a| a['startsAt'] }.each do |alert|
           stored_alert = new_history.find do |p|
             p['id'] == alert['labels']['id'] &&
-              DateTime.parse(p['starts_at']).to_s == DateTime.parse(alert['startsAt']).to_s
+              p['starts_at'] == alert['startsAt']
           end
 
           alert_description = alert.dig('annotations', 'description')
+          firing = is_firing?(alert['status'])
 
-          if stored_alert.nil? && is_firing?(alert['status'])
+          if stored_alert.nil? && firing
             stored_alert = {
               'id' => alert['labels']['id'],
               'starts_at' => alert['startsAt'],
@@ -177,13 +178,14 @@ module Jobs
             }
 
             new_history << stored_alert
-          else
+          elsif stored_alert
+            stored_alert['status'] = alert['status']
             stored_alert['description'] = alert_description
+            stored_alert.delete('ends_at') if firing
           end
 
           if alert['status'] == "resolved" && stored_alert && stored_alert['ends_at'].nil?
             stored_alert['ends_at'] = alert['endsAt']
-            stored_alert['status'] = alert['status']
           end
         end
       end

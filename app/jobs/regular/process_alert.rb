@@ -114,20 +114,25 @@ module Jobs
     end
 
     def create_new_topic(receiver, params, alert_history)
+      topic_title = params["commonAnnotations"]["topic_title"] ||
+        "alert: #{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}"
+
+      datacenter = params["commonLabels"]["datacenter"]
+      topic_body = params["commonAnnotations"]["topic_body"]
+
       PostCreator.create!(Discourse.system_user,
         raw: first_post_body(
           receiver: receiver,
           external_url: params["externalURL"],
-          topic_body: params["commonAnnotations"]["topic_body"],
+          topic_body: topic_body,
           alert_history: alert_history,
           prev_topic_id: receiver["topic_map"][params["groupKey"]]
         ),
         category: Category.where(id: receiver[:category_id]).pluck(:id).first,
         title: topic_title(
           firing: params["status"],
-          datacenter: params["commonLabels"]["datacenter"],
-          topic_title: params["commonAnnotations"]["topic_title"] ||
-            "alert: #{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}",
+          datacenter: datacenter,
+          topic_title: topic_title,
           created_at: DateTime.now
         ),
         skip_validations: true
@@ -136,10 +141,26 @@ module Jobs
           assignee = User.find_by(username: params["commonAnnotations"]["topic_assignee"])
         end
 
+        t.custom_fields[
+          DiscoursePrometheusAlertReceiver::TOPIC_BODY_CUSTOM_FIELD
+        ] = topic_body
+
+        t.custom_fields[
+          DiscoursePrometheusAlertReceiver::TOPIC_TITLE_CUSTOM_FIELD
+        ] = topic_title
+
+        t.custom_fields[
+          DiscoursePrometheusAlertReceiver::DATACENTER_CUSTOM_FIELD
+        ] = datacenter
+
+
         if receiver["topic_map"][params["groupKey"]]
-          t.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD] = receiver["topic_map"][params["groupKey"]]
-          t.save_custom_fields
+          t.custom_fields[
+            DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD
+          ] = receiver["topic_map"][params["groupKey"]]
         end
+
+        t.save_custom_fields(true)
 
         assignee ||= begin
           if user_on_rotation = OpsgenieSchedule.users_on_rotation.sample

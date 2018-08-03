@@ -142,15 +142,21 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               {
                 'id' => 'somethingfunny',
                 'starts_at' => "2018-07-24T23:25:31.363742333Z",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
+                'graph_url' => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
                 'status' => 'firing'
               },
               {
                 'id' => 'somethingnotfunny',
                 'starts_at' => "2018-07-24T23:25:31.363742333Z",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
+                'graph_url' => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
                 'status' => 'firing'
               },
+              {
+                'id' => 'doesnotexists',
+                'starts_at' => "2018-07-24T23:25:31.363742333Z",
+                'graph_url' => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
+                'status' => 'firing'
+              }
             ]
           }
 
@@ -162,6 +168,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             {
               "status" => "success",
               "externalURL" => "supposed.to.be.a.url",
+              "graphURL" => "to.be.a.url",
               "data" => [
                 {
                   "labels" => {
@@ -198,7 +205,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                           },
                           "startsAt" => "2018-07-24T23:25:31.363742333Z",
                           "endsAt" => "0001-01-01T00:00:00Z",
-                          "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
+                          "generatorURL" => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
                           "status" => {
                             "state" => "suppressed",
                             "silencedBy" => [
@@ -225,7 +232,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                           },
                           "startsAt" => "2018-07-24T23:25:31.363742333Z",
                           "endsAt" => "0001-01-01T00:00:00Z",
-                          "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
+                          "generatorURL" => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
                           "status" => {
                             "state" => "suppressed",
                             "silencedBy" => [

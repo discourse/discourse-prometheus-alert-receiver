@@ -95,7 +95,7 @@ module AlertPostMixin
   end
 
   def topic_title(alert_history: nil, datacenter:, topic_title:, firing: nil)
-    firing ||= alert_history.all? do |alert|
+    firing ||= alert_history.any? do |alert|
       is_firing?(alert["status"])
     end
 

@@ -608,7 +608,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(messages.first.data[:firing_alerts_count]).to eq(1)
 
           expect(topic.title).to eq(
-            "Alert investigation required: AnAlert is on the loose"
+            ":fire: Alert investigation required: AnAlert is on the loose"
           )
 
           expect(topic.custom_fields[custom_field_key]['alerts']).to eq(

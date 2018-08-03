@@ -94,12 +94,15 @@ module AlertPostMixin
     "([Previous alert topic created `#{created_at.to_formatted_s}`.](#{Discourse.base_url}/t/#{topic_id}))\n\n"
   end
 
-  def topic_title(alert_history: nil, datacenter:, topic_title:, firing: nil)
+  def topic_title(alert_history: nil, datacenter:, topic_title:, firing: nil, created_at:)
     firing ||= alert_history.any? do |alert|
       is_firing?(alert["status"])
     end
 
-    (firing ? ":fire: " : "") + (datacenter || "") + topic_title
+    (firing ? ":fire: " : "") +
+      (datacenter || "") +
+      topic_title +
+      " - #{Date.parse(created_at.to_s).to_s}"
   end
 
   def first_post_body(receiver:,

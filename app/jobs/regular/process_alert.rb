@@ -48,12 +48,13 @@ module Jobs
     end
 
     def assigned_topic(receiver, params)
-      topic = Topic.find_by(
-        id: receiver[:topic_map][params["groupKey"]],
-        closed: false
-      )
+      topic = Topic.where(id: receiver[:topic_map][params["groupKey"]])
+        .where("DATE(created_at) = ?", Date.today)
+        .first
 
       if topic
+        topic.update_status("closed", false, Discourse.system_user)
+
         prev_alert_history = begin
           key = ::DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD
           topic.custom_fields[key]&.dig('alerts') || []
@@ -73,7 +74,8 @@ module Jobs
           alert_history: alert_history,
           datacenter: params["commonLabels"]["datacenter"],
           topic_title: params["commonAnnotations"]["topic_title"] ||
-            "alert: #{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}"
+            "alert: #{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}",
+          created_at: topic.created_at
         )
 
         post = topic.posts.first
@@ -125,7 +127,8 @@ module Jobs
           firing: params["status"],
           datacenter: params["commonLabels"]["datacenter"],
           topic_title: params["commonAnnotations"]["topic_title"] ||
-            "alert: #{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}"
+            "alert: #{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}",
+          created_at: DateTime.now
         ),
         skip_validations: true
       ).topic.tap do |t|

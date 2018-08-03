@@ -255,7 +255,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             expect(alerts.all? { |alert| alert['status'] == "suppressed" })
               .to eq(true)
 
-            expect(topic.reload.title).to eq("somedatacentersome title")
+            expect(topic.reload.title).to eq(
+              "somedatacentersome title - #{Date.parse(topic.created_at.to_s).to_s}"
+            )
 
             raw = first_post.reload.raw
 
@@ -441,7 +443,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(topic.category).to eq(category)
 
           expect(topic.title).to eq(
-            ":fire: Alert investigation required: AnAlert is on the loose"
+            ":fire: Alert investigation required: AnAlert is on the loose - #{Date.parse(topic.created_at.to_s).to_s}"
           )
 
           expect(receiver["topic_map"][group_key]).to eq(topic.id)
@@ -521,7 +523,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             post "/prometheus/receiver/#{token}", params: payload
           end.to change { Topic.count }.by(1)
 
-          expect(topic.title).to eq(":fire: alert: foo: bar, baz: wombat")
+          expect(topic.title).to eq(":fire: alert: foo: bar, baz: wombat - #{Date.parse(topic.created_at.to_s).to_s}")
 
           raw = topic.posts.first.raw
 
@@ -608,7 +610,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(messages.first.data[:firing_alerts_count]).to eq(1)
 
           expect(topic.title).to eq(
-            ":fire: Alert investigation required: AnAlert is on the loose"
+            ":fire: Alert investigation required: AnAlert is on the loose - #{Date.parse(topic.created_at.to_s).to_s}"
           )
 
           expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
@@ -717,7 +719,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           topic.reload
 
           expect(topic.title).to eq(
-            ":fire: Alert investigation required: AnAlert is on the loose"
+            ":fire: Alert investigation required: AnAlert is on the loose - #{Date.parse(topic.created_at.to_s).to_s}"
           )
 
           expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
@@ -902,7 +904,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           )
 
           expect(keyed_topic.title).to eq(
-            ":fire: Alert investigation required: AnAlert is on the loose"
+            ":fire: Alert investigation required: AnAlert is on the loose - #{Date.parse(keyed_topic.created_at.to_s).to_s}"
           )
 
           expect(receiver["topic_map"][group_key]).to eq(keyed_topic.id)
@@ -1001,12 +1003,32 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             topic.update!(closed: true)
           end
 
-          it "does not update the closed topic" do
-            expect do
+          describe 'for a topic that was created yesterday' do
+            before do
+              topic.update!(created_at: Date.yesterday)
+            end
+
+            it "should not update the closed topic" do
               expect do
-                post "/prometheus/receiver/#{token}", params: payload
-              end.to_not change { first_post.revisions.count }
-            end.to_not change { Topic.count }
+                expect do
+                  post "/prometheus/receiver/#{token}", params: payload
+                end.to_not change { first_post.revisions.count }
+              end.to_not change { Topic.count }
+            end
+          end
+
+          describe 'for a topic that was created on the same day' do
+            before do
+              topic.update!(created_at: Date.today)
+            end
+
+            it "should reopen the topic" do
+              expect do
+                expect do
+                  post "/prometheus/receiver/#{token}", params: payload
+                end.to change { first_post.revisions.count }
+              end.to_not change { Topic.count }
+            end
           end
         end
       end

@@ -40,7 +40,8 @@ module Jobs
             title = topic_title(
               alert_history: stored_alerts,
               datacenter: group["labels"]["datacenter"],
-              topic_title: annotations["topic_title"]
+              topic_title: annotations["topic_title"],
+              created_at: topic.created_at
             )
 
             post = topic.posts.first

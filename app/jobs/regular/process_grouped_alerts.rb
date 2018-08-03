@@ -53,25 +53,27 @@ module Jobs
           end
         end
 
-        to_delete.each { |alert| alerts.delete(alert) }
-        topic.save_custom_fields(true)
+        if !to_delete.blank?
+          to_delete.each { |alert| alerts.delete(alert) }
+          topic.save_custom_fields(true)
 
-        raw = first_post_body(
-          receiver: receiver,
-          external_url: external_url,
-          topic_body: topic.custom_fields[DiscoursePrometheusAlertReceiver::TOPIC_BODY_CUSTOM_FIELD] || '',
-          alert_history: alerts,
-          prev_topic_id: topic.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD]
-        )
+          raw = first_post_body(
+            receiver: receiver,
+            external_url: external_url,
+            topic_body: topic.custom_fields[DiscoursePrometheusAlertReceiver::TOPIC_BODY_CUSTOM_FIELD] || '',
+            alert_history: alerts,
+            prev_topic_id: topic.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD]
+          )
 
-        title = topic_title(
-          alert_history: alerts,
-          datacenter: topic.custom_fields[DiscoursePrometheusAlertReceiver::DATACENTER_CUSTOM_FIELD] || '',
-          topic_title: topic.custom_fields[DiscoursePrometheusAlertReceiver::TOPIC_TITLE_CUSTOM_FIELD] || '',
-          created_at: topic.created_at
-        )
+          title = topic_title(
+            alert_history: alerts,
+            datacenter: topic.custom_fields[DiscoursePrometheusAlertReceiver::DATACENTER_CUSTOM_FIELD] || '',
+            topic_title: topic.custom_fields[DiscoursePrometheusAlertReceiver::TOPIC_TITLE_CUSTOM_FIELD] || '',
+            created_at: topic.created_at
+          )
 
-        revise_topic(topic, title, raw)
+          revise_topic(topic, title, raw)
+        end
       end
     end
 

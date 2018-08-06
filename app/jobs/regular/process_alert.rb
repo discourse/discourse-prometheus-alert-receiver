@@ -165,6 +165,10 @@ module Jobs
         assignee ||= begin
           if user_on_rotation = OpsgenieSchedule.users_on_rotation.sample
             assignee = User.find_by_username_or_email(user_on_rotation)
+
+            if !assignee
+              Rails.logger.warn("Failed to assign alert topic to '#{user_on_rotation}'")
+            end
           else
             random_group_member(receiver)
           end

@@ -7,6 +7,7 @@ module AlertPostMixin
     firing_alerts = []
     resolved_alerts = []
     silenced_alerts = []
+    stale_alerts = []
 
     alert_history.each do |alert|
       status = alert['status']
@@ -16,6 +17,8 @@ module AlertPostMixin
         firing_alerts << alert
       when status == 'resolved'
         resolved_alerts << alert
+      when status == 'stale'
+        stale_alerts << alert
       when is_suppressed?(status)
         silenced_alerts << alert
       end
@@ -23,7 +26,7 @@ module AlertPostMixin
 
     output = ""
 
-    if firing_alerts.length > 0
+    if firing_alerts.present?
       output += "# :fire: Firing Alerts\n\n"
 
       output += firing_alerts.map do |alert|
@@ -34,7 +37,7 @@ module AlertPostMixin
       end.join("\n")
     end
 
-    if silenced_alerts.length > 0
+    if silenced_alerts.present?
       output += "\n\n# :shushing_face: Silenced Alerts\n\n"
 
       output += silenced_alerts.map do |alert|
@@ -45,9 +48,14 @@ module AlertPostMixin
       end.join("\n")
     end
 
-    if resolved_alerts.length > 0
-      output += "\n\n# Alert History\n\n"
-      output += resolved_alerts.map { |alert| alert_item(alert) }.join("\n")
+    {
+      "Alert History" => resolved_alerts,
+      "Stale Alerts" => stale_alerts
+    }.each do |header, alerts|
+      if alerts.present?
+        output += "\n\n# #{header}\n\n"
+        output += alerts.map { |alert| alert_item(alert) }.join("\n")
+      end
     end
 
     output

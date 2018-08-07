@@ -259,8 +259,14 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             key = DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD
             alerts = topic.reload.custom_fields[key]["alerts"]
 
-            expect(alerts.all? { |alert| alert['status'] == "suppressed" })
-              .to eq(true)
+            [
+              ['somethingfunny', 'suppressed'],
+              ['somethingnotfunny', 'suppressed'],
+              ['doesnotexists', 'stale']
+            ].each do |id, status|
+              expect(alerts.find { |alert| alert['id'] == id }["status"])
+                .to eq(status)
+            end
 
             expect(topic.reload.title).to eq(
               "somedatacentersome title - #{Date.parse(topic.created_at.to_s).to_s}"
@@ -272,7 +278,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               "supposed.to.be.a.url",
               "# :shushing_face: Silenced Alerts",
               "[somethingfunny (active since 2018-07-24 23:25:31 UTC)]",
-              "[somethingnotfunny (active since 2018-07-24 23:25:31 UTC)]"
+              "[somethingnotfunny (active since 2018-07-24 23:25:31 UTC)]",
+              "# Stale Alerts",
+              "[doesnotexists (active since 2018-07-24 23:25:31 UTC)]",
             ].each do |content|
               expect(raw).to include(content)
             end

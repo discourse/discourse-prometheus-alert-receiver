@@ -2,6 +2,8 @@ module Jobs
   class ProcessGroupedAlerts < Jobs::Base
     include AlertPostMixin
 
+    STALE_DURATION = 5.freeze
+
     def execute(args)
       token = args[:token]
       data = JSON.parse(args[:data])
@@ -13,7 +15,7 @@ module Jobs
         token
       )
 
-      # remove_stale_alerts(receiver, data, external_url, graph_url)
+      mark_stale_alerts(receiver, data, external_url, graph_url)
       process_silenced_alerts(receiver, data, external_url)
     end
 
@@ -37,10 +39,10 @@ module Jobs
       end
     end
 
-    def remove_stale_alerts(receiver, data, external_url, graph_url)
+    def mark_stale_alerts(receiver, data, external_url, graph_url)
       Topic.firing_alerts.each do |topic|
-        to_delete = []
         alerts = topic.custom_fields.dig(alert_history_key, 'alerts')
+        updated = false
 
         alerts.each do |alert|
           if alert['graph_url'].include?(graph_url) && is_firing?(alert['status'])
@@ -49,26 +51,31 @@ module Jobs
                 current_alert['startsAt'] == alert['starts_at']
             end
 
-            to_delete << alert if is_stale
+            if is_stale &&
+               STALE_DURATION.minute.since > DateTime.parse(alert["starts_at"])
+
+              alert["status"] = "stale"
+              updated = true
+            end
           end
         end
 
-        if !to_delete.blank?
-          to_delete.each { |alert| alerts.delete(alert) }
+        if updated
           topic.save_custom_fields(true)
+          klass = DiscoursePrometheusAlertReceiver
 
           raw = first_post_body(
             receiver: receiver,
             external_url: external_url,
-            topic_body: topic.custom_fields[DiscoursePrometheusAlertReceiver::TOPIC_BODY_CUSTOM_FIELD] || '',
+            topic_body: topic.custom_fields[klass::TOPIC_BODY_CUSTOM_FIELD] || '',
             alert_history: alerts,
-            prev_topic_id: topic.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD]
+            prev_topic_id: topic.custom_fields[klass::PREVIOUS_TOPIC_CUSTOM_FIELD]
           )
 
           title = topic_title(
             alert_history: alerts,
-            datacenter: topic.custom_fields[DiscoursePrometheusAlertReceiver::DATACENTER_CUSTOM_FIELD] || '',
-            topic_title: topic.custom_fields[DiscoursePrometheusAlertReceiver::TOPIC_TITLE_CUSTOM_FIELD] || '',
+            datacenter: topic.custom_fields[klass::DATACENTER_CUSTOM_FIELD] || '',
+            topic_title: topic.custom_fields[klass::TOPIC_TITLE_CUSTOM_FIELD] || '',
             created_at: topic.created_at
           )
 
@@ -133,7 +140,7 @@ module Jobs
     def revise_topic(topic, title, raw)
       post = topic.posts.first
 
-      if post.raw.chomp != raw.chomp || topic.title != title
+      if post.raw.strip != raw.strip || topic.title != title
         post = topic.posts.first
 
         PostRevisor.new(post, topic).revise!(

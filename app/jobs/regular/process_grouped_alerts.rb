@@ -13,7 +13,7 @@ module Jobs
         token
       )
 
-      remove_stale_alerts(receiver, data, external_url, graph_url)
+      # remove_stale_alerts(receiver, data, external_url, graph_url)
       process_silenced_alerts(receiver, data, external_url)
     end
 

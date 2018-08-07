@@ -48,13 +48,12 @@ module Jobs
     end
 
     def assigned_topic(receiver, params)
-      topic = Topic.where(id: receiver[:topic_map][params["groupKey"]])
-        .where("DATE(created_at) = ?", Date.today)
-        .first
+      topic = Topic.find_by(
+        id: receiver[:topic_map][params["groupKey"]],
+        closed: false
+      )
 
       if topic
-        topic.update_status("closed", false, Discourse.system_user)
-
         prev_alert_history = begin
           key = ::DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD
           topic.custom_fields[key]&.dig('alerts') || []
@@ -80,7 +79,7 @@ module Jobs
 
         post = topic.posts.first
 
-        if post.raw.chomp != raw.chomp || topic.title != title
+        if post.raw.strip != raw.strip || topic.title != title
           post = topic.posts.first
 
           PostRevisor.new(post, topic).revise!(

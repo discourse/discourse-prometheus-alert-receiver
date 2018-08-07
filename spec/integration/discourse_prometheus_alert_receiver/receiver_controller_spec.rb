@@ -756,25 +756,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
       end
 
       context "a repeated alert" do
-        before do
-          topic.custom_fields[custom_field_key] = {
-            'alerts' => [
-              {
-                'id' => 'somethingfunny',
-                'starts_at' => "2020-01-02T03:04:05.12345678Z",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'status' => 'firing'
-              }
-            ]
-          }
-
-          topic.save_custom_fields(true)
-
-          expect do
-            post "/prometheus/receiver/#{token}", params: payload
-          end.to change { topic.reload; topic.posts.first.revisions.count }.by(1)
-        end
-
         let(:topic_map) { { group_key => topic.id } }
 
         let(:payload) do
@@ -811,10 +792,29 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
         let(:topic) { Fabricate(:post, raw: 'unchangeable').topic }
 
+        before do
+          topic.custom_fields[custom_field_key] = {
+            'alerts' => [
+              {
+                'id' => 'somethingfunny',
+                'starts_at' => "2020-01-02T03:04:05.12345678Z",
+                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
+                'status' => 'firing'
+              }
+            ]
+          }
+
+          topic.save_custom_fields(true)
+
+          expect do
+            post "/prometheus/receiver/#{token}", params: payload
+          end.to change { topic.reload.posts.first.revisions.count }.by(1)
+        end
+
         it "does not change the existing topic" do
           expect do
             post "/prometheus/receiver/#{token}", params: payload
-          end.to_not change { topic.reload; topic.posts.first.revisions.count }
+          end.to_not change { topic.reload.posts.first.revisions.count }
 
           topic.reload
 
@@ -1010,32 +1010,12 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             topic.update!(closed: true)
           end
 
-          describe 'for a topic that was created yesterday' do
-            before do
-              topic.update!(created_at: Date.yesterday)
-            end
-
-            it "should not update the closed topic" do
+          it "should not do anything" do
+            expect do
               expect do
-                expect do
-                  post "/prometheus/receiver/#{token}", params: payload
-                end.to_not change { first_post.revisions.count }
-              end.to_not change { Topic.count }
-            end
-          end
-
-          describe 'for a topic that was created on the same day' do
-            before do
-              topic.update!(created_at: Date.today)
-            end
-
-            it "should reopen the topic" do
-              expect do
-                expect do
-                  post "/prometheus/receiver/#{token}", params: payload
-                end.to change { first_post.revisions.count }
-              end.to_not change { Topic.count }
-            end
+                post "/prometheus/receiver/#{token}", params: payload
+              end.to_not change { first_post.reload.revisions.count }
+            end.to_not change { Topic.count }
           end
         end
       end

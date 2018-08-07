@@ -168,14 +168,18 @@ module Jobs
             assignee = User.find_by_username_or_email(user_on_rotation)
 
             if !assignee
-              Rails.logger.warn("Failed to assign alert topic to '#{user_on_rotation}'")
+              Rails.logger.warn(
+                "Failed to assign alert topic to '#{user_on_rotation}'"
+              )
             end
+
+            assignee
           else
             random_group_member(receiver)
           end
         end
 
-        unless assignee.nil?
+        if assignee
           TopicAssigner.new(t, Discourse.system_user).assign(assignee)
         end
       end

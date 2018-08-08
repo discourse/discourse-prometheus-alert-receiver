@@ -203,7 +203,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                             "topic_body" => "some body",
                             "topic_title" => "some title"
                           },
-                          "startsAt" => "2018-07-24T23:25:31.363742333Z",
+                          "startsAt" => "2018-07-24T23:25:31.363742334Z",
                           "endsAt" => "0001-01-01T00:00:00Z",
                           "generatorURL" => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
                           "status" => {
@@ -230,7 +230,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                             "topic_body" => "some body",
                             "topic_title" => "some title"
                           },
-                          "startsAt" => "2018-07-24T23:25:31.363742333Z",
+                          "startsAt" => "2018-07-24T23:25:31.363742334Z",
                           "endsAt" => "0001-01-01T00:00:00Z",
                           "generatorURL" => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
                           "status" => {

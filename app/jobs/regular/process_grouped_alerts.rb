@@ -48,7 +48,7 @@ module Jobs
           if alert['graph_url'].include?(graph_url) && is_firing?(alert['status'])
             is_stale = !current_alerts(data).any? do |current_alert|
               current_alert['labels']['id'] == alert['id'] &&
-                current_alert['startsAt'] == alert['starts_at']
+                DateTime.parse(current_alert['startsAt']).to_s == DateTime.parse(alert['starts_at']).to_s
             end
 
             if is_stale &&
@@ -126,7 +126,7 @@ module Jobs
       stored_alerts.each do |alert|
         active = active_alerts.find do |active_alert|
           active_alert["labels"]["id"] == alert["id"] &&
-            active_alert["startsAt"] == alert["starts_at"] &&
+            Date.parse(active_alert["startsAt"]).to_s == Date.parse(alert["starts_at"]).to_s &&
             active_alert["status"]["state"] == "suppressed"
         end
 

@@ -88,7 +88,6 @@ module Jobs
               title: title,
               raw: raw
             },
-            force_new_version: true,
             skip_validations: true,
             validate_topic: true # This is a very weird API
           )

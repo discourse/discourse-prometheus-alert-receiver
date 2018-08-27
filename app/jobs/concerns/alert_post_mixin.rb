@@ -86,7 +86,7 @@ module AlertPostMixin
     url_params = CGI.parse(url.query)
 
     begin_t = Time.parse(alert['starts_at'])
-    end_t   = Time.parse(alert['ends_at']) rescue Time.now
+    end_t   = Time.parse(alert['ends_at']) rescue Time.zone.now
     url_params['g0.range_input'] = "#{(end_t - begin_t).to_i + 600}s"
     url_params['g0.end_input']   = "#{end_t.strftime("%Y-%m-%d %H:%M")}"
     url.query = URI.encode_www_form(url_params)
@@ -128,6 +128,27 @@ module AlertPostMixin
 
     #{render_alerts(alert_history)}
     BODY
+  end
+
+  def revise_topic(topic, title, raw)
+    post = topic.posts.first
+    title_changed = topic.title != title
+    skip_revision = !title_changed
+
+    if post.raw.strip != raw.strip || title_changed
+      post = topic.posts.first
+
+      PostRevisor.new(post, topic).revise!(
+        Discourse.system_user,
+        {
+          title: title,
+          raw: raw
+        },
+        skip_revision: title_changed,
+        skip_validations: true,
+        validate_topic: true # This is a very weird API
+      )
+    end
   end
 
   def is_suppressed?(status)

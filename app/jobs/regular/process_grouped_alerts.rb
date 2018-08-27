@@ -80,6 +80,7 @@ module Jobs
           )
 
           revise_topic(topic, title, raw)
+          publish_firing_alerts
         end
       end
     end
@@ -117,6 +118,7 @@ module Jobs
             )
 
             revise_topic(topic, title, raw)
+            publish_firing_alerts
           end
         end
       end
@@ -135,27 +137,6 @@ module Jobs
           alert["status"] = active["status"]["state"]
         end
       end
-    end
-
-    def revise_topic(topic, title, raw)
-      post = topic.posts.first
-
-      if post.raw.strip != raw.strip || topic.title != title
-        post = topic.posts.first
-
-        PostRevisor.new(post, topic).revise!(
-          Discourse.system_user,
-          {
-            title: title,
-            raw: raw
-          },
-          force_new_version: true,
-          skip_validations: true,
-          validate_topic: true # This is a very weird API
-        )
-      end
-
-      publish_firing_alerts
     end
 
     def publish_firing_alerts

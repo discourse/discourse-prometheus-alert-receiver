@@ -50,21 +50,7 @@ module Jobs
           created_at: topic.created_at
         )
 
-        post = topic.posts.first
-
-        if post.raw.strip != raw.strip || topic.title != title
-          post = topic.posts.first
-
-          PostRevisor.new(post, topic).revise!(
-            Discourse.system_user,
-            {
-              title: title,
-              raw: raw
-            },
-            skip_validations: true,
-            validate_topic: true # This is a very weird API
-          )
-        end
+        revise_topic(topic, title, raw)
       elsif params["status"] == "resolved"
         # We don't care about resolved alerts if we've closed the topic
         return

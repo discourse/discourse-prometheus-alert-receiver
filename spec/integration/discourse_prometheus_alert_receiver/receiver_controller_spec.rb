@@ -753,10 +753,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           }
 
           topic.save_custom_fields(true)
-
-          expect do
-            post "/prometheus/receiver/#{token}", params: payload
-          end.to change { topic.reload.posts.first.revisions.count }.by(1)
         end
 
         it "does not change the existing topic" do
@@ -941,7 +937,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           it "should update the first post of the topic" do
             expect do
               post "/prometheus/receiver/#{token}", params: payload
-            end.to change { first_post.revisions.count }.by(1)
+            end.to change { first_post.revisions.count }.by(0)
 
             raw = first_post.reload.raw
 

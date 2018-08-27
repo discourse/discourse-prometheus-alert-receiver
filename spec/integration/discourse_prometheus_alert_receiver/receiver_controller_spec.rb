@@ -324,66 +324,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
       end
     end
 
-    describe 'for a valid category-only token' do
-      let(:title) { "Omg some service is down!" }
-      let(:raw) { "Server X is on fire!" }
-
-      let(:payload) do
-        {
-          "commonAnnotations" => {
-            "title" => title,
-            "raw" => raw
-          }
-        }
-      end
-
-      before do
-        SiteSetting.login_required = true
-
-        PluginStore.set(plugin_name, token,
-          category_id: category.id,
-          created_at: Time.zone.now,
-          created_by: admin.id
-        )
-      end
-
-      it 'should create the right topic' do
-        freeze_time(Time.zone.local(2017, 8, 11)) do
-          expect do
-            post "/prometheus/receiver/#{token}", params: payload
-          end.to change { Topic.count }.by(1)
-
-          expect(response.status).to eq(200)
-
-          post = Post.last
-          topic = post.topic
-
-          expect(topic.title).to eq("#{title} - 2017-08-11")
-          expect(topic.category).to eq(category)
-          expect(post.raw).to eq(raw)
-
-          topic_id = PluginStore.get(
-            plugin_name,
-            token
-          )[:topic_id]
-
-          expect(topic_id).to eq(topic.id)
-
-          expect do
-            post "/prometheus/receiver/#{token}", params: payload
-          end.to_not change { Topic.count }
-
-          expect(response.status).to eq(200)
-
-          new_post = Post.last
-
-          expect(new_post.id).to_not eq(post.id)
-          expect(post.topic_id).to eq(post.topic_id)
-          expect(post.raw).to eq(raw)
-        end
-      end
-    end
-
     describe "for a valid auto-assigning token" do
       let(:group_key) { "{}/{foo=\"bar\"}:{baz=\"wombat\"}" }
 

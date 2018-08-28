@@ -144,7 +144,7 @@ module AlertPostMixin
           title: title,
           raw: raw
         },
-        skip_revision: title_changed,
+        skip_revision: skip_revision,
         skip_validations: true,
         validate_topic: true # This is a very weird API
       )

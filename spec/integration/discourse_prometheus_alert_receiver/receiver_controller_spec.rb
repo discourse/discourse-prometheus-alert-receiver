@@ -269,7 +269,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             end
 
             expect(topic.reload.title).to eq(
-              "somedatacentersome title - #{Date.parse(topic.created_at.to_s).to_s}"
+              "somedatacenter some title - #{Date.parse(topic.created_at.to_s).to_s}"
             )
 
             raw = first_post.reload.raw

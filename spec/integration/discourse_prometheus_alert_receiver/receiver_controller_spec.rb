@@ -277,13 +277,14 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             [
               "supposed.to.be.a.url",
               "# :shushing_face: Silenced Alerts",
-              "[somethingfunny (active since 2018-07-24 23:25:31 UTC)]",
-              "[somethingnotfunny (active since 2018-07-24 23:25:31 UTC)]",
               "# Stale Alerts",
-              "[doesnotexists (active since 2018-07-24 23:25:31 UTC)]",
             ].each do |content|
               expect(raw).to include(content)
             end
+
+            expect(raw).to match(/somethingfunny.*date=2018-07-24 time=23:25:31/)
+            expect(raw).to match(/somethingnotfunny.*date=2018-07-24 time=23:25:31/)
+            expect(raw).to match(/doesnotexists.*date=2018-07-24 time=23:25:31/)
 
             expect(
               topic.custom_fields[custom_field_key]['alerts'].first['description']
@@ -421,8 +422,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "Test topic\.\.\. test topic\.\.\. whoop whoop"
           )
 
-          expect(raw).to include(
-            "[somethingfunny (active since 2020-01-02 03:04:05 UTC)"
+          expect(raw).to match(
+            /somethingfunny.*date=2020-01-02 time=03:04:05/
           )
 
           expect(raw).to include(
@@ -486,8 +487,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(raw).to include("some description")
           expect(raw).to include("supposed.to.be.a.url")
 
-          expect(raw).to include(
-            "[somethingfunny (active since 2020-01-02 03:04:05 UTC)]"
+          expect(raw).to match(
+            /somethingfunny.*date=2020-01-02 time=03:04:05/
           )
 
           expect(topic.assigned_to_user.id).to eq(assignee.id)
@@ -590,16 +591,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           raw = topic.posts.first.raw
 
           expect(raw).to include("# :fire: Firing Alerts")
-
-          expect(raw).to include(
-            "[somethingnotfunny (active since 2020-01-02 03:04:05 UTC)]"
-          )
-
+          expect(raw).to match(/somethingnotfunny.*date=2020-01-02 time=03:04:05/)
           expect(raw).to include("# Alert History")
-
-          expect(raw).to include(
-            "[somethingfunny (2020-01-02 03:04:05 UTC to 2020-01-02 09:08:07 UTC)]"
-          )
+          expect(raw).to match(/somethingfunny.*date=2020-01-02 time=09:08:07/)
         end
       end
 
@@ -698,8 +692,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
           raw = topic.posts.first.raw
 
-          expect(raw).to match(/oldalert.*2020-01-02 03:04:05 UTC/)
-          expect(raw).to match(/newalert.*2020-12-31 23:59:59 UTC/)
+          expect(raw).to match(/oldalert.*date=2020-01-02 time=03:04:05/)
+          expect(raw).to match(/newalert.*date=2020-12-31 time=23:59:59/)
         end
       end
 
@@ -956,8 +950,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
             expect(raw).to include("# Alert History")
 
-            expect(raw).to include(
-              "[somethingfunny (2020-01-02 03:04:05 UTC to 2020-01-02 09:08:07 UTC)]"
+            expect(raw).to match(
+              /somethingfunny.*date=2020-01-02 time=03:04:05.*date=2020-01-02 time=09:08:07/
             )
           end
         end

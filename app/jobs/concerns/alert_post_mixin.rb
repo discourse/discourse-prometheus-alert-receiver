@@ -62,11 +62,11 @@ module AlertPostMixin
   end
 
   def alert_item(alert)
-    " * [#{alert_label(alert)}](#{alert_link(alert)})"
+    " * [#{alert_label(alert)}](#{alert_link(alert)}) (#{alert_time_range(alert)})"
   end
 
   def alert_label(alert)
-    "#{alert['id']} (#{alert_time_range(alert)})"
+    alert['id']
   end
 
   def alert_time_range(alert)
@@ -77,8 +77,15 @@ module AlertPostMixin
     end
   end
 
-  def friendly_time(t)
-    Time.parse(t).strftime("%Y-%m-%d %H:%M:%S UTC")
+  def friendly_time(time)
+    parsed = Time.zone.parse(time)
+
+    date = <<~DATE
+    [date=#{parsed.strftime("%Y-%m-%d")} time=#{parsed.strftime("%H:%M:%S")} format="L LTS" timezones="Europe/Paris|America/Los_Angeles|Asia/Singapore|Australia/Sydney"]
+    DATE
+
+    date.chomp!
+    date
   end
 
   def alert_link(alert)

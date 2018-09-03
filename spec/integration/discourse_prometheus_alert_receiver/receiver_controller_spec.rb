@@ -776,6 +776,16 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             ]
           )
         end
+
+        it 'reassigns the alert if topic has no assignee' do
+          TopicAssigner.new(topic, Discourse.system_user).unassign
+
+          expect do
+            post "/prometheus/receiver/#{token}", params: payload
+          end.to change { topic.reload.assigned_to_user }
+
+          expect(response.status).to eq(200)
+        end
       end
 
       context "firing alert for a groupkey referencing a closed topic" do

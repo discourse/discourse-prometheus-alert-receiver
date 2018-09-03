@@ -51,6 +51,7 @@ module Jobs
         )
 
         revise_topic(topic, title, raw)
+        assign_alert(topic, receiver) unless topic.assigned_to_user
       elsif params["status"] == "resolved"
         # We don't care about resolved alerts if we've closed the topic
         return
@@ -119,31 +120,34 @@ module Jobs
         end
 
         t.save_custom_fields(true)
-
-        assignee ||= begin
-          if user_on_rotation = OpsgenieSchedule.users_on_rotation.sample
-            assignee = User.find_by_username_or_email(user_on_rotation)
-
-            if !assignee
-              Rails.logger.warn(
-                "Failed to assign alert topic to '#{user_on_rotation}'"
-              )
-            end
-
-            assignee
-          else
-            random_group_member(receiver)
-          end
-        end
-
-        if assignee
-          TopicAssigner.new(t, Discourse.system_user).assign(assignee)
-        end
+        assign_alert(t, receiver, assignee: assignee)
       end
     end
 
     def random_group_member(receiver)
       Group.find_by(id: receiver[:assignee_group_id]).users.sample
+    end
+
+    def assign_alert(topic, receiver, assignee: nil)
+      assignee ||= begin
+        if user_on_rotation = OpsgenieSchedule.users_on_rotation.sample
+          assignee = User.find_by_username_or_email(user_on_rotation)
+
+          if !assignee
+            Rails.logger.warn(
+              "Failed to assign alert topic to '#{user_on_rotation}'"
+            )
+          end
+
+          assignee
+        else
+          random_group_member(receiver)
+        end
+      end
+
+      if assignee
+        TopicAssigner.new(topic, Discourse.system_user).assign(assignee)
+      end
     end
 
     def update_alert_history(previous_history, active_alerts)

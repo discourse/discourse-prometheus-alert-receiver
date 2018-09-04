@@ -71,17 +71,17 @@ module AlertPostMixin
 
   def alert_time_range(alert)
     if alert['ends_at']
-      "#{friendly_time(alert['starts_at'])} to #{friendly_time(alert['ends_at'])}"
+      "#{local_date(alert['starts_at'])} to #{local_date(alert['ends_at'])}"
     else
-      "active since #{friendly_time(alert['starts_at'])}"
+      "active since #{local_date(alert['starts_at'])}"
     end
   end
 
-  def friendly_time(time)
+  def local_date(time)
     parsed = Time.zone.parse(time)
 
     date = <<~DATE
-    [date=#{parsed.strftime("%Y-%m-%d")} time=#{parsed.strftime("%H:%M:%S")} format="L LTS" timezones="Europe/Paris|America/Los_Angeles|Asia/Singapore|Australia/Sydney"]
+    [date=#{parsed.strftime("%Y-%m-%d")} time=#{parsed.strftime("%H:%M:%S")} format="L LTS" timezones="UTC|Europe/Paris|America/Los_Angeles|Asia/Singapore|Australia/Sydney"]
     DATE
 
     date.chomp!
@@ -106,7 +106,7 @@ module AlertPostMixin
     created_at = Topic.where(id: topic_id).pluck(:created_at).first
     return "" unless created_at
 
-    "([Previous alert topic created `#{created_at.to_formatted_s}`.](#{Discourse.base_url}/t/#{topic_id}))\n\n"
+    "([Previous alert topic created.](#{Discourse.base_url}/t/#{topic_id}) #{local_date(created_at.to_s)})\n\n"
   end
 
   def topic_title(alert_history: nil, datacenter:, topic_title:, firing: nil, created_at:)

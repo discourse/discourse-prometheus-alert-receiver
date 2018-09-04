@@ -88,12 +88,12 @@ Layout/TrailingWhitespace:
 Lint/Debugger:
   Enabled: true
 
-Lint/BlockAlignment:
+Layout/BlockAlignment:
   Enabled: true
 
 # Align `end` with the matching keyword or starting expression except for
 # assignments, where it should be aligned with the LHS.
-Lint/EndAlignment:
+Layout/EndAlignment:
   Enabled: true
   EnforcedStyleAlignWith: variable
 
@@ -110,4 +110,3 @@ Layout/AlignHash:
 
 Bundler/OrderedGems:
   Enabled: false
-

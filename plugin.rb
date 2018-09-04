@@ -67,7 +67,7 @@ after_initialize do
     options = topic_query.options
     category_id = Category.where(slug: 'alerts').pluck(:id).first
 
-    if options[:category_id] == category_id  && options[:status] == 'firing'
+    if options[:category_id] == category_id && options[:status] == 'firing'
       results = results.firing_alerts
     end
 

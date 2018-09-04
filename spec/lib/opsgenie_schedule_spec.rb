@@ -8,7 +8,7 @@ RSpec.describe OpsgenieSchedule do
     stub_request(:get, schedules_path)
       .with(
         headers: {
-          'Authorization'=> "GenieKey #{api_key}"
+          'Authorization' => "GenieKey #{api_key}"
         }
       )
       .to_return(status: 200, body: {
@@ -48,7 +48,7 @@ RSpec.describe OpsgenieSchedule do
     stub_request(:get, "#{schedules_path}/uuid1")
       .with(
         headers: {
-          'Authorization'=> "GenieKey #{api_key}"
+          'Authorization' => "GenieKey #{api_key}"
         }
       )
       .to_return(status: 200, body: {
@@ -100,7 +100,7 @@ RSpec.describe OpsgenieSchedule do
       stub_request(:get, "#{schedules_path}/uuid2")
         .with(
           headers: {
-            'Authorization'=> "GenieKey #{api_key}"
+            'Authorization' => "GenieKey #{api_key}"
           }
         )
         .to_return(status: 200, body: {

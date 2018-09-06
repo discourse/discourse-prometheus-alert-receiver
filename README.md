@@ -63,6 +63,11 @@ randomly-selected member of a specified group.
     assignee does not need to be a member of the group that assignees are
     normally chosen from.
 
+  * **`group_topic_assignee`**: Given the `Group#id` or `Group#name` for a group,
+    this overrides the `assignee_group_id` that was created with the receiver
+    token. A person in the group will be randomly selected for assignment to the
+    alert.
+
   * **`description`** -- the description will be displayed under each alert.
 
 ## TODO

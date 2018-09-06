@@ -96,10 +96,6 @@ module Jobs
         ),
         skip_validations: true
       ).topic.tap do |t|
-        if params["commonAnnotations"]["topic_assignee"]
-          assignee = User.find_by(username: params["commonAnnotations"]["topic_assignee"])
-        end
-
         t.custom_fields[
           DiscoursePrometheusAlertReceiver::TOPIC_BODY_CUSTOM_FIELD
         ] = topic_body
@@ -119,17 +115,32 @@ module Jobs
         end
 
         t.save_custom_fields(true)
+
+        assignee =
+          if params["commonAnnotations"]["topic_assignee"]
+            User.find_by(username: params["commonAnnotations"]["topic_assignee"])
+          elsif params["commonAnnotations"]["group_topic_assignee"]
+            random_group_member(params["commonAnnotations"]["group_topic_assignee"])
+          end
+
         assign_alert(t, receiver, assignee: assignee)
       end
     end
 
-    def random_group_member(receiver)
-      Group.find_by(id: receiver[:assignee_group_id]).users.sample
+    def random_group_member(id_or_name)
+      attributes =
+        if id_or_name.to_i != 0
+          { id: id_or_name.to_i }
+        else
+          "LOWER(name) LIKE '#{id_or_name}'"
+        end
+
+      Group.find_by(attributes).users.sample
     end
 
     def assign_alert(topic, receiver, assignee: nil)
       assignee ||= begin
-        if user_on_rotation = OpsgenieSchedule.users_on_rotation.sample
+        if (user_on_rotation = OpsgenieSchedule.users_on_rotation.sample).present?
           assignee = User.find_by_username_or_email(user_on_rotation)
 
           if !assignee
@@ -140,7 +151,7 @@ module Jobs
 
           assignee
         else
-          random_group_member(receiver)
+          random_group_member(receiver[:assignee_group_id])
         end
       end
 

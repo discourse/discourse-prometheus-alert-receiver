@@ -1021,6 +1021,29 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
           expect(topic.assigned_to_user.id).to eq(bob.id)
         end
+
+        describe 'when group_topic_assignee is present in the payload' do
+          let(:group) { Fabricate(:group) }
+
+          before do
+            group.users << [Fabricate(:user), Fabricate(:user)]
+            payload["commonAnnotations"].delete("topic_assignee")
+          end
+
+          it 'should assign the topic correctly' do
+            [group.name, group.id].each do |id_or_name|
+              payload["commonAnnotations"]["group_topic_assignee"] = id_or_name
+
+              expect do
+                post "/prometheus/receiver/#{token}", params: payload
+              end.to change { Topic.count }.by(1)
+
+              expect(response.status).to eq(200)
+              expect(group.users.include?(topic.assigned_to_user)).to eq(true)
+              topic.destroy!
+            end
+          end
+        end
       end
     end
   end

@@ -423,7 +423,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           )
 
           expect(raw).to match(
-            /somethingfunny.*date=2020-01-02 time=03:04:05.* format="L LTS UTC"/
+            /somethingfunny.*date=2020-01-02 time=03:04:05/
           )
 
           expect(raw).to include(

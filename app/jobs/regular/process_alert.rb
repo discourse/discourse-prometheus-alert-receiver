@@ -58,7 +58,6 @@ module Jobs
       else
         alert_history = update_alert_history([], params["alerts"])
         topic = create_new_topic(receiver, params, alert_history)
-        receiver[:topic_map][params["groupKey"]] = topic.id
       end
 
       # Custom fields don't handle array data very well, even when they're
@@ -114,6 +113,7 @@ module Jobs
           ] = receiver["topic_map"][params["groupKey"]]
         end
 
+        receiver[:topic_map][params["groupKey"]] = t.id
         t.save_custom_fields(true)
 
         assignee =

@@ -140,17 +140,20 @@ module Jobs
 
     def assign_alert(topic, receiver, assignee: nil)
       assignee ||= begin
-        if (user_on_rotation = OpsgenieSchedule.users_on_rotation.sample).present?
-          assignee = User.find_by_username_or_email(user_on_rotation)
+        user_on_rotation = OpsgenieSchedule.users_on_rotation.sample
 
-          if !assignee
-            Rails.logger.warn(
-              "Failed to assign alert topic to '#{user_on_rotation}'"
-            )
+        assignee =
+          if user_on_rotation
+            User.find_by_username_or_email(user_on_rotation)
           end
 
+        if assignee
           assignee
         else
+          Rails.logger.warn(
+            "Failed to assign alert topic to '#{user_on_rotation}'"
+          )
+
           random_group_member(receiver[:assignee_group_id])
         end
       end

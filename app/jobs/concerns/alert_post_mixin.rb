@@ -95,7 +95,7 @@ module AlertPostMixin
     begin_t = Time.parse(alert['starts_at'])
     end_t   = Time.parse(alert['ends_at']) rescue Time.zone.now
     url_params['g0.range_input'] = "#{(end_t - begin_t).to_i + 600}s"
-    url_params['g0.end_input']   = "#{end_t.strftime("%Y-%m-%d %H:%M")}"
+    url_params['g0.end_input']   = "#{(end_t + 300).strftime("%Y-%m-%d %H:%M")}"
     url.query = URI.encode_www_form(url_params)
 
     url.to_s

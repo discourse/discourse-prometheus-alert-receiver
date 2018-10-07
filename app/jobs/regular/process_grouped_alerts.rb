@@ -80,7 +80,7 @@ module Jobs
           )
 
           revise_topic(topic, title, raw)
-          publish_firing_alerts
+          publish_alert_counts
         end
       end
     end
@@ -118,7 +118,7 @@ module Jobs
             )
 
             revise_topic(topic, title, raw)
-            publish_firing_alerts
+            publish_alert_counts
           end
         end
       end
@@ -139,9 +139,10 @@ module Jobs
       end
     end
 
-    def publish_firing_alerts
+    def publish_alert_counts
       MessageBus.publish("/alert-receiver",
-        firing_alerts_count: Topic.firing_alerts.count
+        firing_alerts_count: Topic.firing_alerts.count,
+        open_alerts_count: Topic.open_alerts.count
       )
     end
   end

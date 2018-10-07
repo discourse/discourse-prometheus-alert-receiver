@@ -20,10 +20,10 @@ export default {
       api.addNavigationBarItem({
         name: "alerts-category",
         site,
-        href: "/c/alerts?status=firing",
+        href: "/c/alerts?status=open",
         customFilter: category => {
-          if (site.get("firing_alerts_count") <= 0) return false;
-          return !category || (category && category.get("slug") !== "alerts");
+          if (site.get("open_alerts_count") <= 0) return false;
+          return !category;
         }
       });
 
@@ -32,11 +32,11 @@ export default {
           "name",
           "category",
           "topicTrackingState.messageCount",
-          "site.firing_alerts_count"
+          "site.open_alerts_count"
         )
-        count(name, category, _, firingAlertsCount) {
+        count(name, category, _, openAlertsCount) {
           if (name === "alerts-category") {
-            return firingAlertsCount;
+            return openAlertsCount;
           } else {
             return this._super();
           }

@@ -1,3 +1,4 @@
 en:
   site_settings:
     prometheus_alert_receiver_opsgenie_api_key: "OpsGenie integrations API key to fetch schedules which will be used for assigning alerts"
+    prometheus_alert_receiver_custom_nav_group: "Group that should see the top nav item for open alerts (leave blank to include for everyone)"

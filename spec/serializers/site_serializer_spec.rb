@@ -51,6 +51,7 @@ RSpec.describe SiteSerializer do
 
       it 'should include the right count' do
         expect(json[:firing_alerts_count]).to eq(2)
+        expect(json[:open_alerts_count]).to eq(3)
       end
     end
   end

@@ -44,6 +44,15 @@ after_initialize do
       .destroy_all
   end
 
+  add_class_method(:topic, :open_alerts) do
+    joins(:_custom_fields)
+      .where("topic_custom_fields.name = ?",
+        DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD
+      )
+      .where("not closed")
+
+  end
+
   add_class_method(:topic, :firing_alerts) do
     joins(:_custom_fields)
       .where("
@@ -52,12 +61,32 @@ after_initialize do
       ", DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD)
   end
 
+  add_to_class(:user, :include_alert_counts?) do
+    @include_alert_counts ||=
+      begin
+        SiteSetting.prometheus_alert_receiver_custom_nav_group.blank? ||
+        groups
+          .where(name: SiteSetting.prometheus_alert_receiver_custom_nav_group)
+          .exists?
+      end ? :true : false
+
+    @include_alert_counts == :true
+  end
+
   add_to_serializer(:site, :firing_alerts_count) do
     Topic.firing_alerts.count
   end
 
+  add_to_serializer(:site, :open_alerts_count) do
+    Topic.open_alerts.count
+  end
+
+  add_to_serializer(:site, :include_open_alerts_count?) do
+    scope.user&.include_alert_counts?
+  end
+
   add_to_serializer(:site, :include_firing_alerts_count?) do
-    scope.user
+    scope.user&.include_alert_counts?
   end
 
   TopicQuery.add_custom_filter(

@@ -387,6 +387,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
 
         it "should create the right topic" do
+          freeze_time Time.now.utc
+
           messages = MessageBus.track_publish('/alert-receiver') do
             expect do
               post "/prometheus/receiver/#{token}", params: payload
@@ -475,6 +477,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
 
         it "should create the right topic" do
+          freeze_time Time.now.utc
+
           expect do
             post "/prometheus/receiver/#{token}", params: payload
           end.to change { Topic.count }.by(1)
@@ -846,6 +850,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
 
         it "does not change the closed topic's first post" do
+          freeze_time Time.now.utc
+
           expect do
             post "/prometheus/receiver/#{token}", params: payload
           end.to_not change { closed_topic.reload.posts.first.revisions.count }

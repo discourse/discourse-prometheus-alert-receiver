@@ -62,15 +62,10 @@ after_initialize do
   end
 
   add_to_class(:user, :include_alert_counts?) do
-    @include_alert_counts ||=
-      begin
-        SiteSetting.prometheus_alert_receiver_custom_nav_group.blank? ||
-        groups
-          .where(name: SiteSetting.prometheus_alert_receiver_custom_nav_group)
-          .exists?
-      end ? :true : false
-
-    @include_alert_counts == :true
+    @include_alert_counts ||= begin
+      SiteSetting.prometheus_alert_receiver_custom_nav_group.blank? ||
+      groups.exists?(name: SiteSetting.prometheus_alert_receiver_custom_nav_group)
+    end
   end
 
   add_to_serializer(:site, :firing_alerts_count) do

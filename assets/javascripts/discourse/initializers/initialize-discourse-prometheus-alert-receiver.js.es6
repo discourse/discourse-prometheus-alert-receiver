@@ -22,7 +22,8 @@ export default {
         site,
         href: "/c/alerts?status=open",
         customFilter: category => {
-          if (site.get("open_alerts_count") <= 0) return false;
+          let alertCount = site.get("open_alerts_count") || 0;
+          if (alertCount <= 0) return false;
           return !category;
         }
       });

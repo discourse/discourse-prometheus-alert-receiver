@@ -116,7 +116,7 @@ module AlertPostMixin
     end
 
     (firing ? ":fire: " : "") +
-      (datacenter ? "#{datacenter} " : "") +
+      (datacenter ? "#{datacenter}: " : "") +
       topic_title +
       " - #{Date.parse(created_at.to_s).to_s}"
   end

@@ -269,7 +269,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             end
 
             expect(topic.reload.title).to eq(
-              "somedatacenter some title - #{Date.parse(topic.created_at.to_s).to_s}"
+              "somedatacenter: some title - #{Date.parse(topic.created_at.to_s).to_s}"
             )
 
             raw = first_post.reload.raw
@@ -483,7 +483,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             post "/prometheus/receiver/#{token}", params: payload
           end.to change { Topic.count }.by(1)
 
-          expect(topic.title).to eq(":fire: alert: foo: bar, baz: wombat - #{Date.parse(topic.created_at.to_s).to_s}")
+          expect(topic.title).to eq(":fire: foo: bar, baz: wombat - #{Date.parse(topic.created_at.to_s).to_s}")
 
           raw = topic.posts.first.raw
 

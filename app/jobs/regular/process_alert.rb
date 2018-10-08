@@ -46,7 +46,7 @@ module Jobs
           alert_history: alert_history,
           datacenter: params["commonLabels"]["datacenter"],
           topic_title: params["commonAnnotations"]["topic_title"] ||
-            "alert: #{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}",
+            "#{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}",
           created_at: topic.created_at
         )
 
@@ -73,7 +73,7 @@ module Jobs
 
     def create_new_topic(receiver, params, alert_history)
       topic_title = params["commonAnnotations"]["topic_title"] ||
-        "alert: #{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}"
+        "#{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}"
 
       datacenter = params["commonLabels"]["datacenter"]
       topic_body = params["commonAnnotations"]["topic_body"]

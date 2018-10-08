@@ -115,10 +115,15 @@ module AlertPostMixin
       is_firing?(alert["status"])
     end
 
-    (firing ? ":fire: " : "") +
+    title = (firing ? ":fire: " : "") +
       (datacenter ? "#{datacenter}: " : "") +
-      topic_title +
-      " - #{Date.parse(created_at.to_s).to_s}"
+      topic_title
+
+    unless SiteSetting.allow_duplicate_topic_titles
+      title = "#{title} - #{Date.parse(created_at.to_s).to_s}"
+    end
+
+    title
   end
 
   def first_post_body(receiver:,

@@ -100,6 +100,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
     before do
       SiteSetting.queue_jobs = false
+      SiteSetting.allow_duplicate_topic_titles = true
     end
 
     describe 'when token is missing or too short' do
@@ -269,7 +270,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             end
 
             expect(topic.reload.title).to eq(
-              "somedatacenter: some title - #{Date.parse(topic.created_at.to_s).to_s}"
+              "somedatacenter: some title"
             )
 
             raw = first_post.reload.raw
@@ -306,6 +307,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
     before do
       SiteSetting.queue_jobs = false
+      SiteSetting.allow_duplicate_topic_titles = true
     end
 
     describe 'when token is missing or too short' do
@@ -401,7 +403,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(topic.category).to eq(category)
 
           expect(topic.title).to eq(
-            ":fire: Alert investigation required: AnAlert is on the loose - #{Date.parse(topic.created_at.to_s).to_s}"
+            ":fire: Alert investigation required: AnAlert is on the loose"
           )
 
           expect(receiver["topic_map"][group_key]).to eq(topic.id)
@@ -433,6 +435,24 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           )
 
           expect(topic.assigned_to_user.id).to eq(assignee.id)
+        end
+
+        describe 'when allow_duplicate_topic_titles is disabled' do
+          before do
+            SiteSetting.allow_duplicate_topic_titles = false
+          end
+
+          it 'should not add date to the topic title' do
+            expect do
+              post "/prometheus/receiver/#{token}", params: payload
+            end.to change { Topic.count }.by(1)
+
+            expect(response.status).to eq(200)
+
+            expect(topic.title).to eq(
+              ":fire: Alert investigation required: AnAlert is on the loose - #{Date.parse(topic.created_at.to_s).to_s}"
+            )
+          end
         end
       end
 
@@ -483,7 +503,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             post "/prometheus/receiver/#{token}", params: payload
           end.to change { Topic.count }.by(1)
 
-          expect(topic.title).to eq(":fire: foo: bar, baz: wombat - #{Date.parse(topic.created_at.to_s).to_s}")
+          expect(topic.title).to eq(":fire: foo: bar, baz: wombat")
 
           raw = topic.posts.first.raw
 
@@ -570,7 +590,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(messages.first.data[:firing_alerts_count]).to eq(1)
 
           expect(topic.title).to eq(
-            ":fire: Alert investigation required: AnAlert is on the loose - #{Date.parse(topic.created_at.to_s).to_s}"
+            ":fire: Alert investigation required: AnAlert is on the loose"
           )
 
           expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
@@ -672,7 +692,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           topic.reload
 
           expect(topic.title).to eq(
-            ":fire: Alert investigation required: AnAlert is on the loose - #{Date.parse(topic.created_at.to_s).to_s}"
+            ":fire: Alert investigation required: AnAlert is on the loose"
           )
 
           expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
@@ -867,7 +887,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           )
 
           expect(keyed_topic.title).to eq(
-            ":fire: Alert investigation required: AnAlert is on the loose - #{Date.parse(keyed_topic.created_at.to_s).to_s}"
+            ":fire: Alert investigation required: AnAlert is on the loose"
           )
 
           expect(receiver["topic_map"][group_key]).to eq(keyed_topic.id)

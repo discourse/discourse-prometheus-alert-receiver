@@ -3,6 +3,8 @@ require 'cgi'
 
 module DiscoursePrometheusAlertReceiver
   class ReceiverController < ApplicationController
+    requires_plugin DiscoursePrometheusAlertReceiver::PLUGIN_NAME
+
     skip_before_action :check_xhr,
                        :verify_authenticity_token,
                        :redirect_to_login_if_required,

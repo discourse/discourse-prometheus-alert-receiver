@@ -1,3 +1,4 @@
 plugins:
+  prometheus_alert_receiver_enabled: false
   prometheus_alert_receiver_opsgenie_api_key: ''
   prometheus_alert_receiver_custom_nav_group: ''

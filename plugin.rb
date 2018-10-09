@@ -3,6 +3,8 @@
 # version: 0.1
 # url: https://github.com/discourse/discourse-prometheus-alert-receiver
 
+enabled_site_setting :prometheus_alert_receiver_enabled
+
 after_initialize do
   [
     '../app/controllers/discourse_prometheus_alert_receiver/receiver_controller.rb',

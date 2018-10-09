@@ -151,10 +151,14 @@ module Jobs
           if emails.length == 0
             []
           else
-            users = User.where('email': OpsgenieSchedule.users_on_rotation)
+            users = User.with_email(OpsgenieSchedule.users_on_rotation)
+
             if group_id = receiver[:assignee_group_id]
-              users = users.joins(:group_users).where(group_id: group_id)
+              users = users.joins(:group_users).where(
+                group_users: { group_id: group_id }
+              )
             end
+
             users
           end
 

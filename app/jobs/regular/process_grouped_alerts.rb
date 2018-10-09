@@ -74,12 +74,17 @@ module Jobs
 
           title = topic_title(
             alert_history: alerts,
-            datacenter: topic.custom_fields[klass::DATACENTER_CUSTOM_FIELD] || '',
             topic_title: topic.custom_fields[klass::TOPIC_TITLE_CUSTOM_FIELD] || '',
             created_at: topic.created_at
           )
 
-          revise_topic(topic, title, raw)
+          revise_topic(
+            topic: topic,
+            title: title,
+            raw: raw,
+            datacenter: topic.custom_fields[klass::DATACENTER_CUSTOM_FIELD]
+          )
+
           publish_alert_counts
         end
       end
@@ -112,12 +117,17 @@ module Jobs
 
             title = topic_title(
               alert_history: stored_alerts,
-              datacenter: group["labels"]["datacenter"],
               topic_title: annotations["topic_title"],
               created_at: topic.created_at
             )
 
-            revise_topic(topic, title, raw)
+            revise_topic(
+              topic: topic,
+              title: title,
+              raw: raw,
+              datacenter: group["labels"]["datacenter"]
+            )
+
             publish_alert_counts
           end
         end

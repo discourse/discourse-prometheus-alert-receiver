@@ -110,20 +110,12 @@ module AlertPostMixin
     "([Previous alert topic created.](#{Discourse.base_url}/t/#{topic_id}) #{local_date(created_at.to_s)})\n\n"
   end
 
-  def topic_title(alert_history: nil, datacenter:, topic_title:, firing: nil, created_at:)
+  def topic_title(alert_history: nil, topic_title:, firing: nil, created_at:)
     firing ||= alert_history.any? do |alert|
       is_firing?(alert["status"])
     end
 
-    title = (firing ? ":fire: " : "") +
-      (datacenter ? "#{datacenter}: " : "") +
-      topic_title
-
-    unless SiteSetting.allow_duplicate_topic_titles
-      title = "#{title} - #{Date.parse(created_at.to_s).to_s}"
-    end
-
-    title
+    "#{(firing ? ":fire: " : "")}#{topic_title}"
   end
 
   def first_post_body(receiver:,
@@ -143,7 +135,7 @@ module AlertPostMixin
     BODY
   end
 
-  def revise_topic(topic, title, raw)
+  def revise_topic(topic:, title:, raw:, datacenter:)
     post = topic.posts.first
     title_changed = topic.title != title
     skip_revision = !title_changed
@@ -151,12 +143,22 @@ module AlertPostMixin
     if post.raw.strip != raw.strip || title_changed
       post = topic.posts.first
 
+      fields = {
+        title: title,
+        raw: raw
+      }
+
+      if datacenter
+        tags = topic.tags.pluck(:name)
+
+        if !tags.include?(datacenter)
+          fields[:tags] = (tags << datacenter)
+        end
+      end
+
       PostRevisor.new(post, topic).revise!(
         Discourse.system_user,
-        {
-          title: title,
-          raw: raw
-        },
+        fields,
         skip_revision: skip_revision,
         skip_validations: true,
         validate_topic: true # This is a very weird API

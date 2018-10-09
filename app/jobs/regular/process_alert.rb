@@ -44,13 +44,18 @@ module Jobs
 
         title = topic_title(
           alert_history: alert_history,
-          datacenter: params["commonLabels"]["datacenter"],
           topic_title: params["commonAnnotations"]["topic_title"] ||
             "#{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}",
           created_at: topic.created_at
         )
 
-        revise_topic(topic, title, raw)
+        revise_topic(
+          topic: topic,
+          title: title,
+          raw: raw,
+          datacenter: params["commonLabels"]["datacenter"]
+        )
+
         assign_alert(topic, receiver) unless topic.assigned_to_user
       elsif params["status"] == "resolved"
         # We don't care about resolved alerts if we've closed the topic
@@ -89,10 +94,10 @@ module Jobs
         category: Category.where(id: receiver[:category_id]).pluck(:id).first,
         title: topic_title(
           firing: params["status"],
-          datacenter: datacenter,
           topic_title: topic_title,
           created_at: DateTime.now
         ),
+        tags: [datacenter],
         skip_validations: true
       ).topic.tap do |t|
         t.custom_fields[

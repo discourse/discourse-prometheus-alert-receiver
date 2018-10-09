@@ -27,6 +27,16 @@ after_initialize do
     end
   end
 
+  %i{
+    tagging_enabled
+    allow_duplicate_topic_titles
+  }.each do |setting|
+
+    unless SiteSetting.public_send(setting)
+      SiteSetting.public_send("#{setting}=", true)
+    end
+  end
+
   register_topic_custom_field_type(DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD, :json)
   register_topic_custom_field_type(DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD, :integer)
 

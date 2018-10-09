@@ -16,9 +16,9 @@ randomly-selected member of a specified group.
    plugin](https://github.com/discourse/discourse-assign), which this plugin
    depends on.
 
-1. You'll probably want to enable the Discourse site setting, "allow
-   duplicate topic titles", otherwise there will be sadness over time, as
-   multiple topics with the same name will be created over time.
+1. The plugin makes extensive use of tags and creates multiple topics with the
+   same name.  As such, `SiteSetting.allow_duplicate_topic_titles` and
+  `SiteSetting.tagging_enabled` will be enabled by the plugin upon installation.
 
 1. Create a new receiver URL by POSTing (as an admin user, so probably using
    an API key) to `/prometheus/receiver/generate`, with a request body that

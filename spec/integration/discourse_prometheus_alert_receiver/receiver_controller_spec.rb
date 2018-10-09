@@ -100,7 +100,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
     before do
       SiteSetting.queue_jobs = false
-      SiteSetting.allow_duplicate_topic_titles = true
     end
 
     describe 'when token is missing or too short' do
@@ -269,9 +268,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 .to eq(status)
             end
 
-            expect(topic.reload.title).to eq(
-              "somedatacenter: some title"
-            )
+            topic.reload
+            expect(topic.title).to eq("some title")
+            expect(topic.tags.pluck(:name)).to eq(["somedatacenter"])
 
             raw = first_post.reload.raw
 
@@ -307,7 +306,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
     before do
       SiteSetting.queue_jobs = false
-      SiteSetting.allow_duplicate_topic_titles = true
     end
 
     describe 'when token is missing or too short' do
@@ -329,6 +327,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
     describe "for a valid auto-assigning token" do
       let(:group_key) { "{}/{foo=\"bar\"}:{baz=\"wombat\"}" }
+      let(:datacenter) { "some-datacenter" }
 
       let!(:assignee) do
         Fabricate(:user).tap do |u|
@@ -366,6 +365,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "commonLabels" => {
               "alertname" => "AnAlert",
+              "datacenter" => datacenter
             },
             "alerts" => [
               {
@@ -399,8 +399,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
           expect(response.status).to eq(200)
           expect(messages.first.data[:firing_alerts_count]).to eq(1)
-
           expect(topic.category).to eq(category)
+          expect(topic.tags.pluck(:name)).to eq([datacenter])
 
           expect(topic.title).to eq(
             ":fire: Alert investigation required: AnAlert is on the loose"
@@ -436,24 +436,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
           expect(topic.assigned_to_user.id).to eq(assignee.id)
         end
-
-        describe 'when allow_duplicate_topic_titles is disabled' do
-          before do
-            SiteSetting.allow_duplicate_topic_titles = false
-          end
-
-          it 'should not add date to the topic title' do
-            expect do
-              post "/prometheus/receiver/#{token}", params: payload
-            end.to change { Topic.count }.by(1)
-
-            expect(response.status).to eq(200)
-
-            expect(topic.title).to eq(
-              ":fire: Alert investigation required: AnAlert is on the loose - #{Date.parse(topic.created_at.to_s).to_s}"
-            )
-          end
-        end
       end
 
       context "an alert with no annotations" do
@@ -465,7 +447,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "status" => "firing",
             "groupKey" => group_key,
             "commonAnnotations" => {
-              "unrelated" => "annotation",
+              "unrelated" => "annotation"
             },
             "groupLabels" => {
               "foo" => "bar",
@@ -473,6 +455,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "commonLabels" => {
               "alertname" => "AnAlert",
+              "datacenter" => datacenter
             },
             "externalURL" => "supposed.to.be.a.url",
             "alerts" => [
@@ -504,6 +487,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           end.to change { Topic.count }.by(1)
 
           expect(topic.title).to eq(":fire: foo: bar, baz: wombat")
+          expect(topic.tags.pluck(:name)).to eq([datacenter])
 
           raw = topic.posts.first.raw
 
@@ -557,6 +541,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "commonLabels" => {
               "alertname" => "AnAlert",
+              "datacenter" => datacenter
             },
             "alerts" => [
               {
@@ -654,6 +639,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "commonLabels" => {
               "alertname" => "AnAlert",
+              "datacenter" => datacenter
             },
             "alerts" => [
               {
@@ -739,6 +725,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "commonLabels" => {
               "alertname" => "AnAlert",
+              "datacenter" => datacenter
             },
             "alerts" => [
               {
@@ -842,6 +829,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "commonLabels" => {
               "alertname" => "AnAlert",
+              "datacenter" => datacenter
             },
             "alerts" => [
               {
@@ -928,6 +916,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "commonLabels" => {
               "alertname" => "AnAlert",
+              "datacenter" => datacenter
             },
             "alerts" => [
               {
@@ -1016,6 +1005,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "commonLabels" => {
               "alertname" => "AnAlert",
+              "datacenter" => datacenter
             },
             "alerts" => [
               {

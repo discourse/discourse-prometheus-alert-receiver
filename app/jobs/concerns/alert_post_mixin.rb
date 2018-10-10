@@ -110,14 +110,6 @@ module AlertPostMixin
     "([Previous alert topic created.](#{Discourse.base_url}/t/#{topic_id}) #{local_date(created_at.to_s)})\n\n"
   end
 
-  def topic_title(alert_history: nil, topic_title:, firing: nil, created_at:)
-    firing ||= alert_history.any? do |alert|
-      is_firing?(alert["status"])
-    end
-
-    "#{(firing ? ":fire: " : "")}#{topic_title}"
-  end
-
   def first_post_body(receiver:,
                       external_url:,
                       topic_body: "",
@@ -135,12 +127,12 @@ module AlertPostMixin
     BODY
   end
 
-  def revise_topic(topic:, title:, raw:, datacenter:)
+  def revise_topic(topic:, title:, raw:, datacenter:, firing: nil)
     post = topic.posts.first
     title_changed = topic.title != title
     skip_revision = !title_changed
 
-    if post.raw.strip != raw.strip || title_changed
+    if post.raw.strip != raw.strip || title_changed || !firing.nil?
       post = topic.posts.first
 
       fields = {
@@ -149,10 +141,16 @@ module AlertPostMixin
       }
 
       if datacenter
-        tags = topic.tags.pluck(:name)
+        fields[:tags] = topic.tags.pluck(:name)
 
-        if !tags.include?(datacenter)
-          fields[:tags] = (tags << datacenter)
+        if !fields[:tags].include?(datacenter)
+          fields[:tags] << datacenter
+        end
+
+        if firing
+          fields[:tags] << "firing"
+        else
+          fields[:tags].delete("firing")
         end
       end
 

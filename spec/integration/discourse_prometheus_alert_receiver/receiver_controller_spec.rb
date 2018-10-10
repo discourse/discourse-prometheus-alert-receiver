@@ -124,6 +124,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
       let(:topic) { Fabricate(:topic, category: category) }
       let!(:first_post) { Fabricate(:post, topic: topic) }
       let(:topic_map) { { group_key => topic.id } }
+      let(:datacenter) { 'somedatacenter' }
 
       before do
         PluginStore.set(plugin_name, token,
@@ -173,7 +174,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 {
                   "labels" => {
                     "alertname" => "JobDown",
-                    "datacenter" => "somedatacenter"
+                    "datacenter" => datacenter
                   },
                   "groupKey" => group_key,
                   "blocks" => [
@@ -268,9 +269,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 .to eq(status)
             end
 
-            topic.reload
             expect(topic.title).to eq("some title")
-            expect(topic.tags.pluck(:name)).to eq(["somedatacenter"])
+            expect(topic.tags.pluck(:name)).to contain_exactly(datacenter)
 
             raw = first_post.reload.raw
 
@@ -400,11 +400,13 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(response.status).to eq(200)
           expect(messages.first.data[:firing_alerts_count]).to eq(1)
           expect(topic.category).to eq(category)
-          expect(topic.tags.pluck(:name)).to eq([datacenter])
+          expect(topic.tags.pluck(:name)).to eq([datacenter, 'firing'])
 
           expect(topic.title).to eq(
-            ":fire: Alert investigation required: AnAlert is on the loose"
+            "Alert investigation required: AnAlert is on the loose"
           )
+
+          expect(topic.tags.pluck(:name)).to contain_exactly(datacenter, 'firing')
 
           expect(receiver["topic_map"][group_key]).to eq(topic.id)
 
@@ -486,8 +488,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             post "/prometheus/receiver/#{token}", params: payload
           end.to change { Topic.count }.by(1)
 
-          expect(topic.title).to eq(":fire: foo: bar, baz: wombat")
-          expect(topic.tags.pluck(:name)).to eq([datacenter])
+          expect(topic.title).to eq("foo: bar, baz: wombat")
+          expect(topic.tags.pluck(:name)).to contain_exactly(datacenter, 'firing')
 
           raw = topic.posts.first.raw
 
@@ -575,7 +577,11 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(messages.first.data[:firing_alerts_count]).to eq(1)
 
           expect(topic.title).to eq(
-            ":fire: Alert investigation required: AnAlert is on the loose"
+            "Alert investigation required: AnAlert is on the loose"
+          )
+
+          expect(topic.tags.pluck(:name)).to contain_exactly(
+            datacenter, 'firing'
           )
 
           expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
@@ -678,8 +684,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           topic.reload
 
           expect(topic.title).to eq(
-            ":fire: Alert investigation required: AnAlert is on the loose"
+            "Alert investigation required: AnAlert is on the loose"
           )
+
+          expect(topic.tags.pluck(:name)).to contain_exactly(datacenter, 'firing')
 
           expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
             [
@@ -875,7 +883,11 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           )
 
           expect(keyed_topic.title).to eq(
-            ":fire: Alert investigation required: AnAlert is on the loose"
+            "Alert investigation required: AnAlert is on the loose"
+          )
+
+          expect(keyed_topic.tags.pluck(:name)).to contain_exactly(
+            datacenter, 'firing'
           )
 
           expect(receiver["topic_map"][group_key]).to eq(keyed_topic.id)
@@ -961,6 +973,11 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             end.to change { first_post.revisions.count }.by(1) &
               change { topic.reload.title }
 
+            expect(topic.title).to eq(
+              'Alert investigation required: AnAlert is on the loose'
+            )
+
+            expect(topic.tags.pluck(:name)).to contain_exactly(datacenter)
             raw = first_post.reload.raw
 
             expect(raw).to include("# Alert History")

@@ -72,17 +72,14 @@ module Jobs
             prev_topic_id: topic.custom_fields[klass::PREVIOUS_TOPIC_CUSTOM_FIELD]
           )
 
-          title = topic_title(
-            alert_history: alerts,
-            topic_title: topic.custom_fields[klass::TOPIC_TITLE_CUSTOM_FIELD] || '',
-            created_at: topic.created_at
-          )
+          title = topic.custom_fields[klass::TOPIC_TITLE_CUSTOM_FIELD] || ''
 
           revise_topic(
             topic: topic,
             title: title,
             raw: raw,
-            datacenter: topic.custom_fields[klass::DATACENTER_CUSTOM_FIELD]
+            datacenter: topic.custom_fields[klass::DATACENTER_CUSTOM_FIELD],
+            firing: alerts.any? { |alert| is_firing?(alert["status"]) }
           )
 
           publish_alert_counts
@@ -115,17 +112,12 @@ module Jobs
               prev_topic_id: topic.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD]
             )
 
-            title = topic_title(
-              alert_history: stored_alerts,
-              topic_title: annotations["topic_title"],
-              created_at: topic.created_at
-            )
-
             revise_topic(
               topic: topic,
-              title: title,
+              title: annotations["topic_title"],
               raw: raw,
-              datacenter: group["labels"]["datacenter"]
+              datacenter: group["labels"]["datacenter"],
+              firing: stored_alerts.any? { |alert| is_firing?(alert["status"]) }
             )
 
             publish_alert_counts

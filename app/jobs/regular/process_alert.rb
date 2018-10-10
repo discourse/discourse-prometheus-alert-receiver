@@ -42,18 +42,15 @@ module Jobs
           prev_topic_id: topic.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD]
         )
 
-        title = topic_title(
-          alert_history: alert_history,
-          topic_title: params["commonAnnotations"]["topic_title"] ||
-            "#{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}",
-          created_at: topic.created_at
-        )
+        title = params["commonAnnotations"]["topic_title"] ||
+          "#{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}"
 
         revise_topic(
           topic: topic,
           title: title,
           raw: raw,
-          datacenter: params["commonLabels"]["datacenter"]
+          datacenter: params["commonLabels"]["datacenter"],
+          firing: alert_history.any? { |alert| is_firing?(alert["status"]) }
         )
 
         assign_alert(topic, receiver) unless topic.assigned_to_user
@@ -83,6 +80,9 @@ module Jobs
       datacenter = params["commonLabels"]["datacenter"]
       topic_body = params["commonAnnotations"]["topic_body"]
 
+      tags = [datacenter]
+      tags << "firing" if is_firing?(params['status'])
+
       PostCreator.create!(Discourse.system_user,
         raw: first_post_body(
           receiver: receiver,
@@ -92,12 +92,8 @@ module Jobs
           prev_topic_id: receiver["topic_map"][params["groupKey"]]
         ),
         category: Category.where(id: receiver[:category_id]).pluck(:id).first,
-        title: topic_title(
-          firing: params["status"],
-          topic_title: topic_title,
-          created_at: DateTime.now
-        ),
-        tags: [datacenter],
+        title: topic_title,
+        tags: tags,
         skip_validations: true
       ).topic.tap do |t|
         t.custom_fields[

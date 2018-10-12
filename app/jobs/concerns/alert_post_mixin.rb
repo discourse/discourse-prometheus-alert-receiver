@@ -54,7 +54,7 @@ module AlertPostMixin
     }.each do |header, alerts|
       if alerts.present?
         header = I18n.t("prom_alert_receiver.post.headers.#{header}")
-        output += "\n\n## #{header}\n\n#{thead}"
+        output += "\n\n## #{header}\n\n#{thead}\n"
         output += alerts.map { |alert| alert_item(alert) }.join("\n")
       end
     end

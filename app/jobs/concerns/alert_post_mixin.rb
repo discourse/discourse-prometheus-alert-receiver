@@ -31,8 +31,8 @@ module AlertPostMixin
 
       output += firing_alerts.map do |alert|
         <<~BODY
+        #{thead}
         #{alert_item(alert)}
-        #{alert['description']}
         BODY
       end.join("\n")
     end
@@ -42,8 +42,8 @@ module AlertPostMixin
 
       output += silenced_alerts.map do |alert|
         <<~BODY
+        #{thead}
         #{alert_item(alert)}
-        #{alert['description']}
         BODY
       end.join("\n")
     end
@@ -54,7 +54,7 @@ module AlertPostMixin
     }.each do |header, alerts|
       if alerts.present?
         header = I18n.t("prom_alert_receiver.post.headers.#{header}")
-        output += "\n\n## #{header}\n\n"
+        output += "\n\n## #{header}\n\n#{thead}\n"
         output += alerts.map { |alert| alert_item(alert) }.join("\n")
       end
     end
@@ -62,12 +62,20 @@ module AlertPostMixin
     output
   end
 
-  def alert_item(alert)
-    " * [#{alert_label(alert)}](#{alert_link(alert)}) (#{alert_time_range(alert)})"
+  def thead
+    base_key = "prom_alert_receiver.post.table.thead"
+    label = I18n.t("#{base_key}.label")
+    time_range = I18n.t("#{base_key}.time_range")
+    description = I18n.t("#{base_key}.description")
+
+    <<~THEAD
+    | #{label} | #{time_range} | #{description} |
+    | --- | --- | --- |
+    THEAD
   end
 
-  def alert_label(alert)
-    alert['id']
+  def alert_item(alert)
+    "| [#{alert['id']}](#{alert_link(alert)}) | #{alert_time_range(alert)} | #{alert['description']} |"
   end
 
   def alert_time_range(alert)
@@ -82,7 +90,7 @@ module AlertPostMixin
     parsed = Time.zone.parse(time)
 
     date = <<~DATE
-    [date=#{parsed.strftime("%Y-%m-%d")} time=#{parsed.strftime("%H:%M:%S")} format="L LTS" forceTimeZone="UTC" timezones="Europe/Paris|America/Los_Angeles|Asia/Singapore|Australia/Sydney"]
+    [date=#{parsed.strftime("%Y-%m-%d")} time=#{parsed.strftime("%H:%M:%S")} format="L LTS" forceTimeZone="UTC" timezones="Europe/Paris\|America/Los_Angeles\|Asia/Singapore\|Australia/Sydney"]
     DATE
 
     date.chomp!

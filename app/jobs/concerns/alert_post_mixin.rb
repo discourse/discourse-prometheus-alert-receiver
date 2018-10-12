@@ -1,6 +1,9 @@
 module AlertPostMixin
   extend ActiveSupport::Concern
 
+  FIRING_TAG = "firing".freeze
+  HIGH_PRIORITY_TAG = "high-priority".freeze
+
   private
 
   def render_alerts(alert_history)
@@ -120,7 +123,7 @@ module AlertPostMixin
     BODY
   end
 
-  def revise_topic(topic:, title:, raw:, datacenter:, firing: nil)
+  def revise_topic(topic:, title:, raw:, datacenter:, firing: nil, high_priority: false)
     post = topic.posts.first
     title_changed = topic.title != title
     skip_revision = !title_changed
@@ -140,10 +143,12 @@ module AlertPostMixin
           fields[:tags] << datacenter
         end
 
+        fields[:tags] << HIGH_PRIORITY_TAG.dup if high_priority
+
         if firing
-          fields[:tags] << "firing"
+          fields[:tags] << FIRING_TAG.dup
         else
-          fields[:tags].delete("firing")
+          fields[:tags].delete(FIRING_TAG)
         end
       end
 

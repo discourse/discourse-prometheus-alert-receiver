@@ -125,6 +125,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
       let!(:first_post) { Fabricate(:post, topic: topic) }
       let(:topic_map) { { group_key => topic.id } }
       let(:datacenter) { 'somedatacenter' }
+      let(:response_sla) { '4hours' }
 
       before do
         PluginStore.set(plugin_name, token,
@@ -328,6 +329,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
     describe "for a valid auto-assigning token" do
       let(:group_key) { "{}/{foo=\"bar\"}:{baz=\"wombat\"}" }
       let(:datacenter) { "some-datacenter" }
+      let(:response_sla) { '4hours' }
 
       let!(:assignee) do
         Fabricate(:user).tap do |u|
@@ -365,7 +367,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "commonLabels" => {
               "alertname" => "AnAlert",
-              "datacenter" => datacenter
+              "datacenter" => datacenter,
+              "response_sla" => response_sla
             },
             "alerts" => [
               {
@@ -400,13 +403,16 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(response.status).to eq(200)
           expect(messages.first.data[:firing_alerts_count]).to eq(1)
           expect(topic.category).to eq(category)
-          expect(topic.tags.pluck(:name)).to eq([datacenter, 'firing'])
+
+          expect(topic.tags.pluck(:name)).to contain_exactly(
+            datacenter,
+            AlertPostMixin::FIRING_TAG,
+            AlertPostMixin::HIGH_PRIORITY_TAG
+          )
 
           expect(topic.title).to eq(
             "Alert investigation required: AnAlert is on the loose"
           )
-
-          expect(topic.tags.pluck(:name)).to contain_exactly(datacenter, 'firing')
 
           expect(receiver["topic_map"][group_key]).to eq(topic.id)
 
@@ -457,7 +463,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "commonLabels" => {
               "alertname" => "AnAlert",
-              "datacenter" => datacenter
+              "datacenter" => datacenter,
+              "response_sla" => response_sla
             },
             "externalURL" => "supposed.to.be.a.url",
             "alerts" => [
@@ -489,7 +496,12 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           end.to change { Topic.count }.by(1)
 
           expect(topic.title).to eq("foo: bar, baz: wombat")
-          expect(topic.tags.pluck(:name)).to contain_exactly(datacenter, 'firing')
+
+          expect(topic.tags.pluck(:name)).to contain_exactly(
+            datacenter,
+            AlertPostMixin::FIRING_TAG,
+            AlertPostMixin::HIGH_PRIORITY_TAG
+          )
 
           raw = topic.posts.first.raw
 
@@ -546,7 +558,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "commonLabels" => {
               "alertname" => "AnAlert",
-              "datacenter" => datacenter
+              "datacenter" => datacenter,
+              "response_sla" => response_sla
             },
             "alerts" => [
               {
@@ -584,7 +597,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           )
 
           expect(topic.tags.pluck(:name)).to contain_exactly(
-            datacenter, 'firing'
+            datacenter,
+            AlertPostMixin::FIRING_TAG,
+            AlertPostMixin::HIGH_PRIORITY_TAG
           )
 
           expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
@@ -655,7 +670,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "commonLabels" => {
               "alertname" => "AnAlert",
-              "datacenter" => datacenter
+              "datacenter" => datacenter,
+              "response_sla" => response_sla
             },
             "alerts" => [
               {
@@ -697,7 +713,11 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "Alert investigation required: AnAlert is on the loose"
           )
 
-          expect(topic.tags.pluck(:name)).to contain_exactly(datacenter, 'firing')
+          expect(topic.tags.pluck(:name)).to contain_exactly(
+            datacenter,
+            AlertPostMixin::FIRING_TAG,
+            AlertPostMixin::HIGH_PRIORITY_TAG
+          )
 
           expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
             [
@@ -743,7 +763,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "commonLabels" => {
               "alertname" => "AnAlert",
-              "datacenter" => datacenter
+              "datacenter" => datacenter,
+              "response_sla" => response_sla
             },
             "alerts" => [
               {
@@ -847,7 +868,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "commonLabels" => {
               "alertname" => "AnAlert",
-              "datacenter" => datacenter
+              "datacenter" => datacenter,
+              "response_sla" => response_sla
             },
             "alerts" => [
               {
@@ -897,7 +919,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           )
 
           expect(keyed_topic.tags.pluck(:name)).to contain_exactly(
-            datacenter, 'firing'
+            datacenter,
+            AlertPostMixin::FIRING_TAG,
+            AlertPostMixin::HIGH_PRIORITY_TAG
           )
 
           expect(receiver["topic_map"][group_key]).to eq(keyed_topic.id)
@@ -938,7 +962,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "commonLabels" => {
               "alertname" => "AnAlert",
-              "datacenter" => datacenter
+              "datacenter" => datacenter,
+              "response_sla" => response_sla
             },
             "alerts" => [
               {
@@ -987,7 +1012,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               'Alert investigation required: AnAlert is on the loose'
             )
 
-            expect(topic.tags.pluck(:name)).to contain_exactly(datacenter)
+            expect(topic.tags.pluck(:name)).to contain_exactly(
+              datacenter, AlertPostMixin::HIGH_PRIORITY_TAG
+            )
+
             raw = first_post.reload.raw
 
             expect(raw).to include(
@@ -1034,7 +1062,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             },
             "commonLabels" => {
               "alertname" => "AnAlert",
-              "datacenter" => datacenter
+              "datacenter" => datacenter,
+              "response_sla" => response_sla
             },
             "alerts" => [
               {

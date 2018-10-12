@@ -50,7 +50,8 @@ module Jobs
           title: title,
           raw: raw,
           datacenter: params["commonLabels"]["datacenter"],
-          firing: alert_history.any? { |alert| is_firing?(alert["status"]) }
+          firing: alert_history.any? { |alert| is_firing?(alert["status"]) },
+          high_priority: params["commonLabels"]["response_sla"] != next_business_day_sla
         )
 
         assign_alert(topic, receiver) unless topic.assigned_to_user
@@ -81,7 +82,12 @@ module Jobs
       topic_body = params["commonAnnotations"]["topic_body"]
 
       tags = [datacenter]
-      tags << "firing" if is_firing?(params['status'])
+
+      tags << AlertPostMixin::FIRING_TAG.dup if is_firing?(params['status'])
+
+      if params["commonLabels"]["response_sla"] != next_business_day_sla
+        tags << AlertPostMixin::HIGH_PRIORITY_TAG.dup
+      end
 
       PostCreator.create!(Discourse.system_user,
         raw: first_post_body(
@@ -137,6 +143,10 @@ module Jobs
         end
 
       Group.find_by(attributes).users.sample
+    end
+
+    def next_business_day_sla
+      "nbd"
     end
 
     def assign_alert(topic, receiver, assignee: nil)

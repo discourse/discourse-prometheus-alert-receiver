@@ -54,7 +54,7 @@ module AlertPostMixin
     }.each do |header, alerts|
       if alerts.present?
         header = I18n.t("prom_alert_receiver.post.headers.#{header}")
-        output += "\n\n## #{header}\n\n#{thead}\n"
+        output += "\n\n## #{header}\n\n#{thead}"
         output += alerts.map { |alert| alert_item(alert) }.join("\n")
       end
     end
@@ -67,11 +67,7 @@ module AlertPostMixin
     label = I18n.t("#{base_key}.label")
     time_range = I18n.t("#{base_key}.time_range")
     description = I18n.t("#{base_key}.description")
-
-    <<~THEAD
-    | #{label} | #{time_range} | #{description} |
-    | --- | --- | --- |
-    THEAD
+    "| #{label} | #{time_range} | #{description} |\n| --- | --- | --- |"
   end
 
   def alert_item(alert)

@@ -1096,6 +1096,20 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(topic.assigned_to_user.id).to eq(bob.id)
         end
 
+        describe 'when prometheus_alert_receiver_enable_assign is false' do
+          before do
+            SiteSetting.prometheus_alert_receiver_enable_assign = false
+          end
+
+          it 'should not assign anyone to the topic' do
+            expect do
+              post "/prometheus/receiver/#{token}", params: payload
+            end.to change { Topic.count }.by(1)
+
+            expect(topic.assigned_to_user).to eq(nil)
+          end
+        end
+
         describe 'when group_topic_assignee is present in the payload' do
           let(:group) { Fabricate(:group) }
 

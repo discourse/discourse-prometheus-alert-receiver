@@ -150,6 +150,8 @@ module Jobs
     end
 
     def assign_alert(topic, receiver, assignee: nil)
+      return unless SiteSetting.prometheus_alert_receiver_enable_assign
+
       assignee ||= begin
         emails = OpsgenieSchedule.users_on_rotation
 

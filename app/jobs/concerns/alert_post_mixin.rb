@@ -30,12 +30,12 @@ module AlertPostMixin
     output = ""
 
     if firing_alerts.present?
-      output += "## :fire: #{I18n.t("prom_alert_receiver.post.headers.firing")}\n\n#{thead}\n"
+      output += "## :fire: #{I18n.t("prom_alert_receiver.post.headers.firing")}\n\n#{thead(firing_alerts)}\n"
       output += firing_alerts.map { |alert| alert_item(alert) }.join("\n")
     end
 
     if silenced_alerts.present?
-      output += "\n\n# :shushing_face: Silenced Alerts\n\n#{thead}\n"
+      output += "\n\n# :shushing_face: Silenced Alerts\n\n#{thead(silenced_alerts)}\n"
       output += silenced_alerts.map { |alert| alert_item(alert) }.join("\n")
     end
 
@@ -45,7 +45,7 @@ module AlertPostMixin
     }.each do |header, alerts|
       if alerts.present?
         header = I18n.t("prom_alert_receiver.post.headers.#{header}")
-        output += "\n\n## #{header}\n\n#{thead}\n"
+        output += "\n\n## #{header}\n\n#{thead(alerts)}\n"
         output += alerts.map { |alert| alert_item(alert) }.join("\n")
       end
     end
@@ -53,16 +53,31 @@ module AlertPostMixin
     output
   end
 
-  def thead
+  def thead(alerts)
     base_key = "prom_alert_receiver.post.table.thead"
     label = I18n.t("#{base_key}.label")
     time_range = I18n.t("#{base_key}.time_range")
-    description = I18n.t("#{base_key}.description")
-    "| #{label} | #{time_range} | #{description} |\n| --- | --- | --- |"
+
+    headers = "| #{label} | #{time_range} |"
+    cells = "| --- | --- |"
+
+    if alerts.any? { |alert| alert['description'] }
+      description = I18n.t("#{base_key}.description")
+      headers += " #{description} |"
+      cells += " --- |"
+    end
+
+    "#{headers}\n#{cells}"
   end
 
   def alert_item(alert)
-    "| [#{alert['id']}](#{alert_link(alert)}) | #{alert_time_range(alert)} | #{alert['description']} |"
+    item = "| [#{alert['id']}](#{alert_link(alert)}) | #{alert_time_range(alert)} |"
+
+    if description = alert['description']
+      item += " #{description} |"
+    end
+
+    item
   end
 
   def alert_time_range(alert)

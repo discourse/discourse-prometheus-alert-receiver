@@ -434,9 +434,12 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "Test topic\.\.\. test topic\.\.\. whoop whoop"
           )
 
-          expect(raw).to match(
-            /somethingfunny.*date=2020-01-02 time=03:04:05/
-          )
+          expect(raw).to include(<<~RAW)
+          | Label | Time Range | Description |
+          | --- | --- | --- |
+          RAW
+
+          expect(raw).to match(/somethingfunny.*date=2020-01-02 time=03:04:05/)
 
           expect(raw).to include(
             "http://alerts.example.com/graph?g0.expr=lolrus"

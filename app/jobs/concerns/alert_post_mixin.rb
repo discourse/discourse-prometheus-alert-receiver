@@ -27,7 +27,7 @@ module AlertPostMixin
     output = ""
 
     if firing_alerts.present?
-      output += "# :fire: Firing Alerts\n\n"
+      output += "## :fire: #{I18n.t("prom_alert_receiver.post.headers.firing")}\n\n"
 
       output += firing_alerts.map do |alert|
         <<~BODY
@@ -49,11 +49,12 @@ module AlertPostMixin
     end
 
     {
-      "Alert History" => resolved_alerts,
-      "Stale Alerts" => stale_alerts
+      "history" => resolved_alerts,
+      "stale" => stale_alerts
     }.each do |header, alerts|
       if alerts.present?
-        output += "\n\n# #{header}\n\n"
+        header = I18n.t("prom_alert_receiver.post.headers.#{header}")
+        output += "\n\n## #{header}\n\n"
         output += alerts.map { |alert| alert_item(alert) }.join("\n")
       end
     end

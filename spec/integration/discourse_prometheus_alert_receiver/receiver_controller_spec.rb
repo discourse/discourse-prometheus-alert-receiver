@@ -277,7 +277,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             [
               "supposed.to.be.a.url",
               "# :shushing_face: Silenced Alerts",
-              "# Stale Alerts",
+              "## #{I18n.t('prom_alert_receiver.post.headers.stale')}",
             ].each do |content|
               expect(raw).to include(content)
             end
@@ -493,7 +493,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
           raw = topic.posts.first.raw
 
-          expect(raw).to match(/# :fire: Firing Alerts/m)
+          expect(raw).to include(
+            "## :fire: #{I18n.t('prom_alert_receiver.post.headers.firing')}"
+          )
+
           expect(raw).to include("some description")
           expect(raw).to include("supposed.to.be.a.url")
 
@@ -605,9 +608,16 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
           raw = topic.posts.first.raw
 
-          expect(raw).to include("# :fire: Firing Alerts")
+          expect(raw).to include(
+            "## :fire: #{I18n.t("prom_alert_receiver.post.headers.firing")}"
+          )
+
           expect(raw).to match(/somethingnotfunny.*date=2020-01-02 time=03:04:05/)
-          expect(raw).to include("# Alert History")
+
+          expect(raw).to include(
+            "## #{I18n.t("prom_alert_receiver.post.headers.history")}"
+          )
+
           expect(raw).to match(/somethingfunny.*date=2020-01-02 time=09:08:07/)
         end
       end
@@ -980,7 +990,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             expect(topic.tags.pluck(:name)).to contain_exactly(datacenter)
             raw = first_post.reload.raw
 
-            expect(raw).to include("# Alert History")
+            expect(raw).to include(
+              "## #{I18n.t('prom_alert_receiver.post.headers.history')}"
+            )
 
             expect(raw).to match(
               /somethingfunny.*date=2020-01-02 time=03:04:05.*date=2020-01-02 time=09:08:07/

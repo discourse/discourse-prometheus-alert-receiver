@@ -27,25 +27,13 @@ module AlertPostMixin
     output = ""
 
     if firing_alerts.present?
-      output += "## :fire: #{I18n.t("prom_alert_receiver.post.headers.firing")}\n\n"
-
-      output += firing_alerts.map do |alert|
-        <<~BODY
-        #{thead}
-        #{alert_item(alert)}
-        BODY
-      end.join("\n")
+      output += "## :fire: #{I18n.t("prom_alert_receiver.post.headers.firing")}\n\n#{thead}\n"
+      output += firing_alerts.map { |alert| alert_item(alert) }.join("\n")
     end
 
     if silenced_alerts.present?
-      output += "\n\n# :shushing_face: Silenced Alerts\n\n"
-
-      output += silenced_alerts.map do |alert|
-        <<~BODY
-        #{thead}
-        #{alert_item(alert)}
-        BODY
-      end.join("\n")
+      output += "\n\n# :shushing_face: Silenced Alerts\n\n#{thead}\n"
+      output += silenced_alerts.map { |alert| alert_item(alert) }.join("\n")
     end
 
     {

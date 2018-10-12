@@ -86,7 +86,7 @@ module AlertPostMixin
     parsed = Time.zone.parse(time)
 
     date = <<~DATE
-    [date=#{parsed.strftime("%Y-%m-%d")} time=#{parsed.strftime("%H:%M:%S")} format="L LTS" forceTimeZone="UTC" timezones="Europe/Paris\|America/Los_Angeles\|Asia/Singapore\|Australia/Sydney"]
+    [date=#{parsed.strftime("%Y-%m-%d")} time=#{parsed.strftime("%H:%M:%S")} format="L LTS" forceTimeZone="UTC" timezones="Europe/Paris\\|America/Los_Angeles\\|Asia/Singapore\\|Australia/Sydney"]
     DATE
 
     date.chomp!

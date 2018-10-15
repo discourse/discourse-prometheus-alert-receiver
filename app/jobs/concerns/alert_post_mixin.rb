@@ -12,7 +12,7 @@ module AlertPostMixin
     silenced_alerts = []
     stale_alerts = []
 
-    alert_history.each do |alert|
+    alert_history.sort_by { |alert| alert["datacenter"] }.each do |alert|
       status = alert['status']
 
       case
@@ -57,9 +57,10 @@ module AlertPostMixin
     base_key = "prom_alert_receiver.post.table.thead"
     label = I18n.t("#{base_key}.label")
     time_range = I18n.t("#{base_key}.time_range")
+    datacenter = I18n.t("#{base_key}.datacenter")
 
-    headers = "| #{label} | #{time_range} |"
-    cells = "| --- | --- |"
+    headers = "| #{datacenter} | #{label} | #{time_range} |"
+    cells = "| --- | --- | --- |"
 
     if alerts.any? { |alert| alert['description'] }
       description = I18n.t("#{base_key}.description")
@@ -71,7 +72,7 @@ module AlertPostMixin
   end
 
   def alert_item(alert)
-    item = "| [#{alert['id']}](#{alert_link(alert)}) | #{alert_time_range(alert)} |"
+    item = "| #{alert['datacenter']} | [#{alert['id']}](#{alert_link(alert)}) | #{alert_time_range(alert)} |"
 
     if description = alert['description']
       item += " #{description} |"
@@ -122,14 +123,11 @@ module AlertPostMixin
   end
 
   def first_post_body(receiver:,
-                      external_url:,
                       topic_body: "",
                       alert_history:,
                       prev_topic_id:)
 
     <<~BODY
-    #{external_url}
-
     #{topic_body}
 
     #{prev_topic_link(prev_topic_id)}
@@ -138,7 +136,7 @@ module AlertPostMixin
     BODY
   end
 
-  def revise_topic(topic:, title:, raw:, datacenter:, firing: nil, high_priority: false)
+  def revise_topic(topic:, title:, raw:, datacenters:, firing: nil, high_priority: false)
     post = topic.posts.first
     title_changed = topic.title != title
     skip_revision = !title_changed
@@ -151,20 +149,20 @@ module AlertPostMixin
         raw: raw
       }
 
-      if datacenter
+      fields[:tags] ||= []
+
+      if datacenters.present?
         fields[:tags] = topic.tags.pluck(:name)
+        fields[:tags].concat(datacenters)
+        fields[:tags].uniq!
+      end
 
-        if !fields[:tags].include?(datacenter)
-          fields[:tags] << datacenter
-        end
+      fields[:tags] << HIGH_PRIORITY_TAG.dup if high_priority
 
-        fields[:tags] << HIGH_PRIORITY_TAG.dup if high_priority
-
-        if firing
-          fields[:tags] << FIRING_TAG.dup
-        else
-          fields[:tags].delete(FIRING_TAG)
-        end
+      if firing
+        fields[:tags] << FIRING_TAG.dup
+      else
+        fields[:tags].delete(FIRING_TAG)
       end
 
       PostRevisor.new(post, topic).revise!(
@@ -183,5 +181,11 @@ module AlertPostMixin
 
   def is_firing?(status)
     status == "firing".freeze
+  end
+
+  def datacenters(alerts)
+    alerts.each_with_object(Set.new) do |alert, set|
+      set << alert['datacenter'] if alert['datacenter']
+    end.to_a
   end
 end

@@ -120,11 +120,17 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
     end
 
     describe 'for a valid token' do
-      let(:group_key) { "{}/{foo=\"bar\"}:{baz=\"wombat\"}" }
+      let(:alert_name) { "JobDown" }
+
+      let(:group_key) do
+        "{}/{notify=\"live\"}:{alertname=\"#{alert_name}\", datacenter=\"#{datacenter}\"}"
+      end
+
       let(:topic) { Fabricate(:topic, category: category) }
       let!(:first_post) { Fabricate(:post, topic: topic) }
-      let(:topic_map) { { group_key => topic.id } }
+      let(:topic_map) { { alert_name => topic.id } }
       let(:datacenter) { 'somedatacenter' }
+      let(:datacenter2) { 'somedatacenter2' }
       let(:response_sla) { '4hours' }
 
       before do
@@ -145,19 +151,22 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'id' => 'somethingfunny',
                 'starts_at' => "2018-07-24T23:25:31.363742333Z",
                 'graph_url' => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
-                'status' => 'firing'
+                'status' => 'firing',
+                'datacenter' => datacenter
               },
               {
                 'id' => 'somethingnotfunny',
                 'starts_at' => "2018-07-24T23:25:31.363742333Z",
                 'graph_url' => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
-                'status' => 'firing'
+                'status' => 'firing',
+                'datacenter' => datacenter
               },
               {
                 'id' => 'doesnotexists',
                 'starts_at' => "2018-07-24T23:25:31.363742333Z",
                 'graph_url' => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
-                'status' => 'firing'
+                'status' => 'firing',
+                'datacenter' => datacenter2
               }
             ]
           }
@@ -174,7 +183,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               "data" => [
                 {
                   "labels" => {
-                    "alertname" => "JobDown",
+                    "alertname" => alert_name,
                     "datacenter" => datacenter
                   },
                   "groupKey" => group_key,
@@ -193,7 +202,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                       "alerts" => [
                         {
                           "labels" => {
-                            "alertname" => "somealertname",
+                            "alertname" => alert_name,
                             "datacenter" => "somedatacenter",
                             'id' => 'somethingnotfunny',
                             "instance" => "someinstance",
@@ -220,7 +229,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                         },
                         {
                           "labels" => {
-                            "alertname" => "somealertname",
+                            "alertname" => alert_name,
                             "datacenter" => "somedatacenter",
                             'id' => 'somethingfunny',
                             "instance" => "someinstance",
@@ -271,21 +280,32 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             end
 
             expect(topic.title).to eq("some title")
-            expect(topic.tags.pluck(:name)).to contain_exactly(datacenter)
+
+            expect(topic.tags.pluck(:name)).to contain_exactly(
+              datacenter,
+              datacenter2
+            )
 
             raw = first_post.reload.raw
 
             [
-              "supposed.to.be.a.url",
               "# :shushing_face: Silenced Alerts",
               "## #{I18n.t('prom_alert_receiver.post.headers.stale')}",
             ].each do |content|
               expect(raw).to include(content)
             end
 
-            expect(raw).to match(/somethingfunny.*date=2018-07-24 time=23:25:31/)
-            expect(raw).to match(/somethingnotfunny.*date=2018-07-24 time=23:25:31/)
-            expect(raw).to match(/doesnotexists.*date=2018-07-24 time=23:25:31/)
+            expect(raw).to match(
+              /#{datacenter}.*somethingfunny.*date=2018-07-24 time=23:25:31/
+            )
+
+            expect(raw).to match(
+              /#{datacenter}.*somethingnotfunny.*date=2018-07-24 time=23:25:31/
+            )
+
+            expect(raw).to match(
+              /#{datacenter2}.*doesnotexists.*date=2018-07-24 time=23:25:31/
+            )
 
             expect(
               topic.custom_fields[custom_field_key]['alerts'].first['description']
@@ -327,14 +347,54 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
     end
 
     describe "for a valid auto-assigning token" do
-      let(:group_key) { "{}/{foo=\"bar\"}:{baz=\"wombat\"}" }
+      let(:alert_name) { "AnAlert" }
       let(:datacenter) { "some-datacenter" }
+
+      let(:group_key) do
+        "{}/{notify=\"live\"}:{alertname=\"#{alert_name}\", datacenter=\"#{datacenter}\"}"
+      end
+
       let(:response_sla) { '4hours' }
 
       let!(:assignee) do
         Fabricate(:user).tap do |u|
           Fabricate(:group_user, user: u, group: assignee_group)
         end
+      end
+
+      let(:payload) do
+        {
+          "version" => "4",
+          "status" => "firing",
+          "groupKey" => group_key,
+          "groupLabels" => {
+            "foo" => "bar",
+            "baz" => "wombat",
+          },
+          "commonAnnotations" => {
+            "topic_body" => "Test topic... test topic... whoop whoop",
+            "topic_title" => "Alert investigation required: AnAlert is on the loose",
+          },
+          "commonLabels" => {
+            "alertname" => alert_name,
+            "datacenter" => datacenter,
+            "response_sla" => response_sla
+          },
+          "alerts" => [
+            {
+              "annotations" => {
+                "description" => "some description"
+              },
+              "status" => "firing",
+              "labels" => {
+                "id" => "somethingfunny",
+              },
+              "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
+              "startsAt"     => "2020-01-02T03:04:05.12345678Z",
+              "endsAt"       => "0001-01-01T00:00:00Z",
+            }
+          ],
+        }
       end
 
       before do
@@ -352,43 +412,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
       context "a firing alert on a previously unseen groupKey" do
         let(:topic_map) { {} }
 
-        let(:payload) do
-          {
-            "version" => "4",
-            "status" => "firing",
-            "groupKey" => group_key,
-            "groupLabels" => {
-              "foo" => "bar",
-              "baz" => "wombat",
-            },
-            "commonAnnotations" => {
-              "topic_body" => "Test topic... test topic... whoop whoop",
-              "topic_title" => "Alert investigation required: AnAlert is on the loose",
-            },
-            "commonLabels" => {
-              "alertname" => "AnAlert",
-              "datacenter" => datacenter,
-              "response_sla" => response_sla
-            },
-            "alerts" => [
-              {
-                "annotations" => {
-                  "description" => "some description"
-                },
-                "status" => "firing",
-                "labels" => {
-                  "id" => "somethingfunny",
-                },
-                "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
-                "startsAt"     => "2020-01-02T03:04:05.12345678Z",
-                "endsAt"       => "0001-01-01T00:00:00Z",
-              }
-            ],
-          }
-        end
-
         let(:topic) do
-          Topic.find_by(id: receiver["topic_map"][group_key])
+          Topic.find_by(id: receiver["topic_map"][alert_name])
         end
 
         it "should create the right topic" do
@@ -414,7 +439,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             "Alert investigation required: AnAlert is on the loose"
           )
 
-          expect(receiver["topic_map"][group_key]).to eq(topic.id)
+          expect(receiver["topic_map"][alert_name]).to eq(topic.id)
 
           expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
             [
@@ -423,7 +448,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                 'status' => 'firing',
-                'description' => 'some description'
+                'description' => 'some description',
+                'datacenter' => datacenter
               },
             ]
           )
@@ -435,11 +461,11 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           )
 
           expect(raw).to include(<<~RAW)
-          | Label | Time Range | Description |
-          | --- | --- | --- |
+          | DC | Label | Time Range | Description |
+          | --- | --- | --- | --- |
           RAW
 
-          expect(raw).to match(/somethingfunny.*date=2020-01-02 time=03:04:05/)
+          expect(raw).to match(/#{datacenter}.*somethingfunny.*date=2020-01-02 time=03:04:05/)
 
           expect(raw).to include(
             "http://alerts.example.com/graph?g0.expr=lolrus"
@@ -452,43 +478,14 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
       context "an alert with no annotations" do
         let(:topic_map) { {} }
 
-        let(:payload) do
-          {
-            "version" => "4",
-            "status" => "firing",
-            "groupKey" => group_key,
-            "commonAnnotations" => {
-              "unrelated" => "annotation"
-            },
-            "groupLabels" => {
-              "foo" => "bar",
-              "baz" => "wombat",
-            },
-            "commonLabels" => {
-              "alertname" => "AnAlert",
-              "datacenter" => datacenter,
-              "response_sla" => response_sla
-            },
-            "externalURL" => "supposed.to.be.a.url",
-            "alerts" => [
-              {
-                "annotations" => {
-                  "description" => "some description"
-                },
-                "status" => "firing",
-                "labels" => {
-                  "id" => "somethingfunny",
-                },
-                "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
-                "startsAt" => "2020-01-02T03:04:05.12345678Z",
-                "endsAt" => "0001-01-01T00:00:00Z",
-              },
-            ],
-          }
+        let(:topic) do
+          Topic.find_by(id: receiver["topic_map"][alert_name])
         end
 
-        let(:topic) do
-          Topic.find_by(id: receiver["topic_map"][group_key])
+        before do
+          payload["commonAnnotations"] = {
+            "unrelated" => "annotation"
+          }
         end
 
         it "should create the right topic" do
@@ -513,7 +510,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           )
 
           expect(raw).to include("some description")
-          expect(raw).to include("supposed.to.be.a.url")
 
           expect(raw).to match(
             /somethingfunny.*date=2020-01-02 time=03:04:05/
@@ -523,7 +519,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
       end
 
-      context "a resolving alert on an existing groupKey" do
+      context "a resolving alert for an existing alert" do
         before do
           topic.custom_fields[custom_field_key] = {
             'alerts' => [
@@ -531,57 +527,41 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'id' => 'somethingfunny',
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'status' => 'firing'
+                'status' => 'firing',
+                'datacenter' => datacenter
               },
               {
                 'id' => 'somethingnotfunny',
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'status' => 'firing'
+                'status' => 'firing',
+                'datacenter' => datacenter
               },
             ]
           }
+
           topic.save_custom_fields(true)
-        end
 
-        let(:topic_map) { { group_key => topic.id } }
+          payload["status"] = "resolved"
 
-        let(:payload) do
-          {
-            "version" => "4",
-            "status" => "resolved",
-            "groupKey" => group_key,
-            "groupLabels" => {
-              "foo" => "bar",
-              "baz" => "wombat",
-            },
-            "commonAnnotations" => {
-              "topic_body" => "Test topic... test topic... whoop whoop",
-              "topic_title" => "Alert investigation required: AnAlert is on the loose",
-            },
-            "commonLabels" => {
-              "alertname" => "AnAlert",
-              "datacenter" => datacenter,
-              "response_sla" => response_sla
-            },
-            "alerts" => [
-              {
-                "annotations" => {
-                  "description" => "some description"
-                },
-                "status" => "resolved",
-                "labels" => {
-                  "id" => "somethingfunny",
-                },
-                "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
-                "startsAt" => "2020-01-02T03:04:05.12345679Z",
-                "endsAt" => "2020-01-02T09:08:07.09876543Z",
-              }
-            ],
-          }
+          payload["alerts"] = [
+            {
+              "annotations" => {
+                "description" => "some description"
+              },
+              "status" => "resolved",
+              "labels" => {
+                "id" => "somethingfunny",
+              },
+              "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
+              "startsAt" => "2020-01-02T03:04:05.12345679Z",
+              "endsAt" => "2020-01-02T09:08:07.09876543Z",
+            }
+          ]
         end
 
         let(:topic) { Fabricate(:post).topic }
+        let(:topic_map) { { alert_name => topic.id } }
 
         it "updates the existing topic" do
           messages = MessageBus.track_publish('/alert-receiver') do
@@ -613,13 +593,15 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'ends_at' => "2020-01-02T09:08:07.09876543Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                 'status' => 'resolved',
-                'description' => 'some description'
+                'description' => 'some description',
+                'datacenter' => datacenter
               },
               {
                 'id' => 'somethingnotfunny',
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'status' => 'firing'
+                'status' => 'firing',
+                'datacenter' => datacenter
               }
             ]
           )
@@ -640,7 +622,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
       end
 
-      context "a new firing alert on an existing groupKey" do
+      context "a new firing alert for an existing alert" do
+        let(:topic_map) { { alert_name => topic.id } }
+        let(:topic) { Fabricate(:post).topic }
+
         before do
           topic.custom_fields[custom_field_key] = {
             'alerts' => [
@@ -648,62 +633,39 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'id' => 'oldalert',
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'status' => 'firing'
+                'status' => 'firing',
+                'datacenter' => datacenter
               }
             ]
           }
 
           topic.save_custom_fields(true)
-        end
 
-        let(:topic_map) { { group_key => topic.id } }
-
-        let(:payload) do
-          {
-            "version" => "4",
-            "status" => "firing",
-            "groupKey" => group_key,
-            "groupLabels" => {
-              "foo" => "bar",
-              "baz" => "wombat",
-            },
-            "commonAnnotations" => {
-              "topic_body" => "Test topic... test topic... whoop whoop",
-              "topic_title" => "Alert investigation required: AnAlert is on the loose",
-            },
-            "commonLabels" => {
-              "alertname" => "AnAlert",
-              "datacenter" => datacenter,
-              "response_sla" => response_sla
-            },
-            "alerts" => [
-              {
-                "annotations" => {
-                  "description" => "some description"
-                },
-                "status" => "firing",
-                "labels" => {
-                  "id" => "oldalert",
-                },
-                "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
-                "startsAt" => "2020-01-02T03:04:05.12345678Z",
+          payload["alerts"] = [
+            {
+              "annotations" => {
+                "description" => "some description"
               },
-              {
-                "annotations" => {
-                  "description" => "some description"
-                },
-                "status" => "firing",
-                "labels" => {
-                  "id" => "newalert",
-                },
-                "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
-                "startsAt" => "2020-12-31T23:59:59.75645342Z",
+              "status" => "firing",
+              "labels" => {
+                "id" => "oldalert",
               },
-            ],
-          }
+              "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
+              "startsAt" => "2020-01-02T03:04:05.12345678Z",
+            },
+            {
+              "annotations" => {
+                "description" => "some description"
+              },
+              "status" => "firing",
+              "labels" => {
+                "id" => "newalert",
+              },
+              "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
+              "startsAt" => "2020-12-31T23:59:59.75645342Z",
+            }
+          ]
         end
-
-        let(:topic) { Fabricate(:post).topic }
 
         it "updates the existing topic" do
           expect do
@@ -729,14 +691,16 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                 'status' => 'firing',
-                'description' => 'some description'
+                'description' => 'some description',
+                'datacenter' => datacenter
               },
               {
                 'id' => "newalert",
                 'starts_at' => "2020-12-31T23:59:59.75645342Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                 'status' => 'firing',
-                'description' => 'some description'
+                'description' => 'some description',
+                'datacenter' => datacenter
               },
             ]
           )
@@ -746,46 +710,82 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(raw).to match(/oldalert.*date=2020-01-02 time=03:04:05/)
           expect(raw).to match(/newalert.*date=2020-12-31 time=23:59:59/)
         end
-      end
 
-      context "a repeated alert" do
-        let(:topic_map) { { group_key => topic.id } }
+        describe 'from another datacenter' do
+          let(:datacenter2) { "datacenter-2" }
 
-        let(:payload) do
-          {
-            "version" => "4",
-            "status" => "firing",
-            "groupKey" => group_key,
-            "groupLabels" => {
-              "foo" => "bar",
-              "baz" => "wombat",
-            },
-            "commonAnnotations" => {
-              "topic_body" => "Test topic... test topic... whoop whoop",
-              "topic_title" => "Alert investigation required: AnAlert is on the loose",
-            },
-            "commonLabels" => {
-              "alertname" => "AnAlert",
-              "datacenter" => datacenter,
-              "response_sla" => response_sla
-            },
-            "alerts" => [
+          before do
+            payload["commonLabels"]["datacenter"] = datacenter2
+
+            payload["alerts"] = [
               {
                 "annotations" => {
                   "description" => "some description"
                 },
                 "status" => "firing",
                 "labels" => {
-                  "id" => "somethingfunny",
+                  "id" => "oldalert",
                 },
                 "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
-                "startsAt" => "2020-01-02T03:04:05.12345678Z",
-              },
-            ],
-          }
-        end
+                "startsAt" => "2020-12-31T23:59:59.75645342Z",
+              }
+            ]
+          end
 
+          it "updates the existing topic correctly" do
+            expect do
+              post "/prometheus/receiver/#{token}", params: payload
+            end.to_not change { Topic.count }
+
+            topic.reload
+
+            expect(topic.title).to eq(
+              "Alert investigation required: AnAlert is on the loose"
+            )
+
+            expect(topic.tags.pluck(:name)).to contain_exactly(
+              datacenter,
+              datacenter2,
+              AlertPostMixin::FIRING_TAG,
+              AlertPostMixin::HIGH_PRIORITY_TAG
+            )
+
+            expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
+              [
+                {
+                  'id' => "oldalert",
+                  'starts_at' => "2020-01-02T03:04:05.12345678Z",
+                  'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
+                  'status' => 'firing',
+                  'datacenter' => datacenter
+                },
+                {
+                  'id' => "oldalert",
+                  'starts_at' => "2020-12-31T23:59:59.75645342Z",
+                  'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
+                  'status' => 'firing',
+                  'description' => 'some description',
+                  'datacenter' => datacenter2
+                },
+              ]
+            )
+
+            raw = topic.posts.first.raw
+
+            expect(raw).to match(
+              /#{datacenter}.*oldalert.*date=2020-01-02 time=03:04:05/
+            )
+
+            expect(raw).to match(
+              /#{datacenter2}.*oldalert.*date=2020-12-31 time=23:59:59/
+            )
+          end
+        end
+      end
+
+      context "a repeated alert" do
         let(:topic) { Fabricate(:post, raw: 'unchangeable').topic }
+        let(:topic_map) { { alert_name => topic.id } }
 
         before do
           topic.custom_fields[custom_field_key] = {
@@ -794,12 +794,27 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'id' => 'somethingfunny',
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'status' => 'firing'
+                'status' => 'firing',
+                'datacenter' => datacenter
               }
             ]
           }
 
           topic.save_custom_fields(true)
+
+          payload["alerts"] = [
+            {
+              "annotations" => {
+                "description" => "some description"
+              },
+              "status" => "firing",
+              "labels" => {
+                "id" => "somethingfunny",
+              },
+              "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
+              "startsAt" => "2020-01-02T03:04:05.12345678Z",
+            },
+          ]
 
           expect do
             post "/prometheus/receiver/#{token}", params: payload
@@ -818,7 +833,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                 'status' => 'firing',
-                'description' => 'some description'
+                'description' => 'some description',
+                'datacenter' => datacenter
               },
             ]
           )
@@ -852,43 +868,23 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           }
 
           closed_topic.save_custom_fields(true)
-        end
 
-        let(:topic_map) { { group_key => closed_topic.id } }
-
-        let(:payload) do
-          {
-            "version" => "4",
-            "status" => "firing",
-            "groupKey" => group_key,
-            "groupLabels" => {
-              "foo" => "bar",
-              "baz" => "wombat",
-            },
-            "commonAnnotations" => {
-              "topic_body" => "Test topic... test topic... whoop whoop",
-              "topic_title" => "Alert investigation required: AnAlert is on the loose",
-            },
-            "commonLabels" => {
-              "alertname" => "AnAlert",
-              "datacenter" => datacenter,
-              "response_sla" => response_sla
-            },
-            "alerts" => [
-              {
-                "annotations" => {
-                  "description" => "some description"
-                },
-                "status" => "firing",
-                "labels" => {
-                  "id" => "anotheralert",
-                },
-                "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
-                "startsAt" => "2020-12-31T23:59:59.98765Z",
+          payload["alerts"] = [
+            {
+              "annotations" => {
+                "description" => "some description"
               },
-            ],
-          }
+              "status" => "firing",
+              "labels" => {
+                "id" => "anotheralert",
+              },
+              "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
+              "startsAt" => "2020-12-31T23:59:59.98765Z",
+            },
+          ]
         end
+
+        let(:topic_map) { { alert_name => closed_topic.id } }
 
         let(:closed_topic) do
           topic = Fabricate(:post, raw: 'unchanged').topic
@@ -897,7 +893,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
 
         let(:keyed_topic) do
-          Topic.find_by(id: receiver["topic_map"][group_key])
+          Topic.find_by(id: receiver["topic_map"][alert_name])
         end
 
         it "does not change the closed topic's first post" do
@@ -927,7 +923,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             AlertPostMixin::HIGH_PRIORITY_TAG
           )
 
-          expect(receiver["topic_map"][group_key]).to eq(keyed_topic.id)
+          expect(receiver["topic_map"][alert_name]).to eq(keyed_topic.id)
 
           expect(keyed_topic.custom_fields[custom_field_key]['alerts']).to eq(
             [
@@ -936,7 +932,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'starts_at' => "2020-12-31T23:59:59.98765Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                 'status' => 'firing',
-                'description' => 'some description'
+                'description' => 'some description',
+                'datacenter' => datacenter
               },
             ]
           )
@@ -949,45 +946,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
       end
 
-      context "resolved alert for a groupkey" do
-        let(:payload) do
-          {
-            "version" => "4",
-            "status" => "resolved",
-            "groupKey" => group_key,
-            "groupLabels" => {
-              "foo" => "bar",
-              "baz" => "wombat",
-            },
-            "commonAnnotations" => {
-              "topic_body" => "Test topic... test topic... whoop whoop",
-              "topic_title" => "Alert investigation required: AnAlert is on the loose",
-            },
-            "commonLabels" => {
-              "alertname" => "AnAlert",
-              "datacenter" => datacenter,
-              "response_sla" => response_sla
-            },
-            "alerts" => [
-              {
-                "annotations" => {
-                  "description" => "some description"
-                },
-                "status" => "resolved",
-                "labels" => {
-                  "id" => "somethingfunny",
-                },
-                "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
-                "startsAt" => "2020-01-02T03:04:05.12345678Z",
-                "endsAt" => "2020-01-02T09:08:07.09876543Z",
-              },
-            ],
-          }
-        end
-
+      context "resolved alert for an alert" do
         let(:first_post) { Fabricate(:post, raw: 'unchanged') }
         let(:topic) { first_post.topic }
-        let(:topic_map) { { group_key => topic.id } }
+        let(:topic_map) { { alert_name => topic.id } }
 
         before do
           topic.custom_fields[custom_field_key] = {
@@ -996,12 +958,30 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'id' => 'somethingfunny',
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'status' => "resolved"
+                'status' => "resolved",
+                'datacenter' => datacenter
               }
             ]
           }
 
           topic.save_custom_fields(true)
+
+          payload["status"] = "resolved"
+
+          payload["alerts"] = [
+            {
+              "annotations" => {
+                "description" => "some description"
+              },
+              "status" => "resolved",
+              "labels" => {
+                "id" => "somethingfunny",
+              },
+              "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
+              "startsAt" => "2020-01-02T03:04:05.12345678Z",
+              "endsAt" => "2020-01-02T09:08:07.09876543Z",
+            },
+          ]
         end
 
         describe "referencing an open topic" do
@@ -1048,48 +1028,15 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
       context "firing alert with a designated assignee" do
         let(:topic_map) { {} }
-
-        let(:payload) do
-          {
-            "version" => "4",
-            "status" => "firing",
-            "groupKey" => group_key,
-            "groupLabels" => {
-              "foo" => "bar",
-              "baz" => "wombat",
-            },
-            "commonAnnotations" => {
-              "topic_body" => "Test topic... test topic... whoop whoop",
-              "topic_title" => "Alert investigation required: AnAlert is on the loose",
-              "topic_assignee" => "bobtheangryflower",
-            },
-            "commonLabels" => {
-              "alertname" => "AnAlert",
-              "datacenter" => datacenter,
-              "response_sla" => response_sla
-            },
-            "alerts" => [
-              {
-                "annotations" => {
-                  "description" => "some description"
-                },
-                "status" => "firing",
-                "labels" => {
-                  "id" => "somethingfunny",
-                },
-                "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
-                "startsAt" => "2020-01-02T03:04:05.12345678Z",
-                "endsAt" => "0001-01-01T00:00:00Z",
-              },
-            ],
-          }
-        end
+        let!(:bob) { Fabricate(:user, username: "bobtheangryflower") }
 
         let(:topic) do
-          Topic.find_by(id: receiver["topic_map"][group_key])
+          Topic.find_by(id: receiver["topic_map"][alert_name])
         end
 
-        let!(:bob) { Fabricate(:user, username: "bobtheangryflower") }
+        before do
+          payload["commonAnnotations"]["topic_assignee"] = "bobtheangryflower"
+        end
 
         it "creates a new topic" do
           expect do

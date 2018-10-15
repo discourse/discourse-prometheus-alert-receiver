@@ -3,26 +3,26 @@ module Jobs
     include AlertPostMixin
 
     def execute(args)
-      token = args[:token]
+      @token = args[:token]
       params = args[:params]
 
       receiver = PluginStore.get(
         ::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
-        token
+        @token
       )
 
       assigned_topic(receiver, params)
-
-      PluginStore.set(::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
-        token, receiver
-      )
     end
 
     private
 
+    def group_key(params)
+      params["commonLabels"]["alertname"]
+    end
+
     def assigned_topic(receiver, params)
       topic = Topic.find_by(
-        id: receiver[:topic_map][params["groupKey"]],
+        id: receiver[:topic_map][group_key(params)],
         closed: false
       )
 
@@ -32,11 +32,12 @@ module Jobs
           topic.custom_fields[key]&.dig('alerts') || []
         end
 
-        alert_history = update_alert_history(prev_alert_history, params["alerts"])
+        alert_history = update_alert_history(prev_alert_history, params["alerts"],
+          datacenter: params["commonLabels"]["datacenter"]
+        )
 
         raw = first_post_body(
           receiver: receiver,
-          external_url: params["externalURL"],
           topic_body: params["commonAnnotations"]["topic_body"],
           alert_history: alert_history,
           prev_topic_id: topic.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD]
@@ -49,7 +50,7 @@ module Jobs
           topic: topic,
           title: title,
           raw: raw,
-          datacenter: params["commonLabels"]["datacenter"],
+          datacenters: datacenters(alert_history),
           firing: alert_history.any? { |alert| is_firing?(alert["status"]) },
           high_priority: params["commonLabels"]["response_sla"] != next_business_day_sla
         )
@@ -59,7 +60,10 @@ module Jobs
         # We don't care about resolved alerts if we've closed the topic
         return
       else
-        alert_history = update_alert_history([], params["alerts"])
+        alert_history = update_alert_history([], params["alerts"],
+          datacenter: params["commonLabels"]["datacenter"]
+        )
+
         topic = create_new_topic(receiver, params, alert_history)
       end
 
@@ -92,10 +96,9 @@ module Jobs
       PostCreator.create!(Discourse.system_user,
         raw: first_post_body(
           receiver: receiver,
-          external_url: params["externalURL"],
           topic_body: topic_body,
           alert_history: alert_history,
-          prev_topic_id: receiver["topic_map"][params["groupKey"]]
+          prev_topic_id: receiver["topic_map"][group_key(params)]
         ),
         category: Category.where(id: receiver[:category_id]).pluck(:id).first,
         title: topic_title,
@@ -114,14 +117,19 @@ module Jobs
           DiscoursePrometheusAlertReceiver::DATACENTER_CUSTOM_FIELD
         ] = datacenter
 
-        if receiver["topic_map"][params["groupKey"]]
+        if receiver["topic_map"][group_key(params)]
           t.custom_fields[
             DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD
-          ] = receiver["topic_map"][params["groupKey"]]
+          ] = receiver["topic_map"][group_key(params)]
         end
 
-        receiver[:topic_map][params["groupKey"]] = t.id
         t.save_custom_fields(true)
+
+        receiver[:topic_map][group_key(params)] = t.id
+
+        PluginStore.set(::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
+          @token, receiver
+        )
 
         assignee =
           if params["commonAnnotations"]["topic_assignee"]
@@ -178,10 +186,11 @@ module Jobs
       end
     end
 
-    def update_alert_history(previous_history, active_alerts)
+    def update_alert_history(previous_history, active_alerts, datacenter:)
       # Sadly, this is the easiest way to get a deep dup
       JSON.parse(previous_history.to_json).tap do |new_history|
         active_alerts.sort_by { |a| a['startsAt'] }.each do |alert|
+
           stored_alert = new_history.find do |p|
             p['id'] == alert['labels']['id'] &&
               DateTime.parse(p['starts_at']).to_s == DateTime.parse(alert['startsAt']).to_s
@@ -196,13 +205,15 @@ module Jobs
               'starts_at' => alert['startsAt'],
               'graph_url' => alert['generatorURL'],
               'status' => alert['status'],
-              'description' => alert_description
+              'description' => alert_description,
+              'datacenter' => datacenter
             }
 
             new_history << stored_alert
           elsif stored_alert
             stored_alert['status'] = alert['status']
             stored_alert['description'] = alert_description
+            stored_alert['datacenter'] = datacenter
             stored_alert.delete('ends_at') if firing
           end
 

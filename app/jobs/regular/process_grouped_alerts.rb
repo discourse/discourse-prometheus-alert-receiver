@@ -7,7 +7,6 @@ module Jobs
     def execute(args)
       token = args[:token]
       data = JSON.parse(args[:data])
-      external_url = args[:external_url]
       graph_url = args[:graph_url]
 
       receiver = PluginStore.get(
@@ -15,8 +14,8 @@ module Jobs
         token
       )
 
-      mark_stale_alerts(receiver, data, external_url, graph_url)
-      process_silenced_alerts(receiver, data, external_url)
+      mark_stale_alerts(receiver, data, graph_url)
+      process_silenced_alerts(receiver, data)
     end
 
     private
@@ -39,7 +38,7 @@ module Jobs
       end
     end
 
-    def mark_stale_alerts(receiver, data, external_url, graph_url)
+    def mark_stale_alerts(receiver, data, graph_url)
       Topic.firing_alerts.each do |topic|
         alerts = topic.custom_fields.dig(alert_history_key, 'alerts')
         updated = false
@@ -66,7 +65,6 @@ module Jobs
 
           raw = first_post_body(
             receiver: receiver,
-            external_url: external_url,
             topic_body: topic.custom_fields[klass::TOPIC_BODY_CUSTOM_FIELD] || '',
             alert_history: alerts,
             prev_topic_id: topic.custom_fields[klass::PREVIOUS_TOPIC_CUSTOM_FIELD]
@@ -78,7 +76,7 @@ module Jobs
             topic: topic,
             title: title,
             raw: raw,
-            datacenter: topic.custom_fields[klass::DATACENTER_CUSTOM_FIELD],
+            datacenters: datacenters(alerts),
             firing: alerts.any? { |alert| is_firing?(alert["status"]) }
           )
 
@@ -87,10 +85,9 @@ module Jobs
       end
     end
 
-    def process_silenced_alerts(receiver, data, external_url)
+    def process_silenced_alerts(receiver, data)
       data.each do |group|
-        group_key = group["groupKey"]
-        topic = Topic.find_by(id: receiver[:topic_map][group_key])
+        topic = Topic.find_by(id: receiver[:topic_map][group["labels"]["alertname"]])
 
         if topic
           group["blocks"].each do |block|
@@ -101,12 +98,14 @@ module Jobs
               topic.custom_fields[alert_history_key]&.dig('alerts') || []
             end
 
-            silence_alerts(stored_alerts, active_alerts)
+            silence_alerts(stored_alerts, active_alerts,
+              datacenter: group["labels"]["datacenter"]
+            )
+
             topic.save_custom_fields(true)
 
             raw = first_post_body(
               receiver: receiver,
-              external_url: external_url,
               topic_body: annotations["topic_body"],
               alert_history: stored_alerts,
               prev_topic_id: topic.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD]
@@ -116,7 +115,7 @@ module Jobs
               topic: topic,
               title: annotations["topic_title"],
               raw: raw,
-              datacenter: group["labels"]["datacenter"],
+              datacenters: datacenters(stored_alerts),
               firing: stored_alerts.any? { |alert| is_firing?(alert["status"]) }
             )
 
@@ -126,10 +125,11 @@ module Jobs
       end
     end
 
-    def silence_alerts(stored_alerts, active_alerts)
+    def silence_alerts(stored_alerts, active_alerts, datacenter:)
       stored_alerts.each do |alert|
         active = active_alerts.find do |active_alert|
           active_alert["labels"]["id"] == alert["id"] &&
+            alert['datacenter'] == datacenter &&
             Date.parse(active_alert["startsAt"]).to_s == Date.parse(alert["starts_at"]).to_s &&
             active_alert["status"]["state"] == "suppressed"
         end

@@ -14,7 +14,7 @@ module Jobs
         token
       )
 
-      mark_stale_alerts(receiver, data, graph_url)
+      # mark_stale_alerts(receiver, data, graph_url)
       process_silenced_alerts(receiver, data)
     end
 

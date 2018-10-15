@@ -44,7 +44,7 @@ module Jobs
         alerts = topic.custom_fields.dig(alert_history_key, 'alerts')
         updated = false
 
-        alerts.each do |alert|
+        alerts&.each do |alert|
           if alert['graph_url'].include?(graph_url) && is_firing?(alert['status'])
             is_stale = !current_alerts(data).any? do |current_alert|
               current_alert['labels']['id'] == alert['id'] &&

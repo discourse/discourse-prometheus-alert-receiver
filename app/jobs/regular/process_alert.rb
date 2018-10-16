@@ -115,10 +115,6 @@ module Jobs
           DiscoursePrometheusAlertReceiver::TOPIC_TITLE_CUSTOM_FIELD
         ] = topic_title
 
-        t.custom_fields[
-          DiscoursePrometheusAlertReceiver::DATACENTER_CUSTOM_FIELD
-        ] = datacenter
-
         if receiver["topic_map"][group_key(params)]
           t.custom_fields[
             DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD

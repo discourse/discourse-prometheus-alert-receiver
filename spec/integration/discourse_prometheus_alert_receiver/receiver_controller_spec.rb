@@ -474,9 +474,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           )
 
           expect(raw).to include(<<~RAW)
-          ### [#{datacenter}](#{external_url})
-
-          | Label | Time Range | Description |
+          | [#{datacenter}](#{external_url}) | | |
           | --- | --- | --- |
           RAW
 
@@ -796,16 +794,12 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             raw = topic.posts.first.raw
 
             expect(raw).to include(<<~RAW)
-            ### [#{datacenter}](#{external_url})
-
-            | Label | Time Range |
+            | [#{datacenter}](#{external_url}) | |
             | --- | --- |
             RAW
 
             expect(raw).to include(<<~RAW)
-            ### [#{datacenter2}](#{external_url2})
-
-            | Label | Time Range | Description |
+            | [#{datacenter2}](#{external_url2}) | | |
             | --- | --- | --- |
             RAW
 

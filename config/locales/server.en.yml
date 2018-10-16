@@ -10,8 +10,3 @@ en:
         firing: "Firing Alerts"
         history: "Alert History"
         stale: "Stale Alerts"
-      table:
-        thead:
-          label: "Label"
-          time_range: "Time Range"
-          description: "Description"

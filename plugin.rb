@@ -5,6 +5,8 @@
 
 enabled_site_setting :prometheus_alert_receiver_enabled
 
+register_asset "stylesheets/topic-post.scss"
+
 after_initialize do
   [
     '../app/controllers/discourse_prometheus_alert_receiver/receiver_controller.rb',

@@ -53,17 +53,12 @@ module AlertPostMixin
     output
   end
 
-  def thead(alerts)
-    base_key = "prom_alert_receiver.post.table.thead"
-    label = I18n.t("#{base_key}.label")
-    time_range = I18n.t("#{base_key}.time_range")
-
-    headers = "| #{label} | #{time_range} |"
+  def thead(alerts, datacenter, external_link)
+    headers = "| [#{datacenter}](#{external_link}) | |"
     cells = "| --- | --- |"
 
     if alerts.any? { |alert| alert['description'] }
-      description = I18n.t("#{base_key}.description")
-      headers += " #{description} |"
+      headers += " |"
       cells += " --- |"
     end
 
@@ -185,15 +180,18 @@ module AlertPostMixin
   end
 
   def generate_alert_items(grouped_alerts, output)
+    output += "<div data-plugin='prom-alerts-table'>\n\n"
+
     grouped_alerts
       .group_by { |alert| [alert['datacenter'], alert['external_url']] }
       .each do |(datacenter, external_url), alerts|
 
-      output += "### [#{datacenter}](#{external_url})\n\n#{thead(alerts)}\n"
+      output += "#{thead(alerts, datacenter, external_url)}\n"
       output += alerts.map { |alert| alert_item(alert) }.join("\n")
       output += "\n\n"
     end
 
+    output += "</div>"
     output
   end
 end

@@ -464,11 +464,13 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           )
 
           expect(raw).to include(<<~RAW)
-          | DC | Label | Time Range | Description |
-          | --- | --- | --- | --- |
+          ### [#{datacenter}](#{external_url})
+
+          | Label | Time Range | Description |
+          | --- | --- | --- |
           RAW
 
-          expect(raw).to match(/#{datacenter}.*somethingfunny.*date=2020-01-02 time=03:04:05/)
+          expect(raw).to match(/somethingfunny.*date=2020-01-02 time=03:04:05/)
 
           expect(raw).to include(
             "http://alerts.example.com/graph?g0.expr=lolrus"
@@ -638,7 +640,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                 'status' => 'firing',
-                'datacenter' => datacenter
+                'datacenter' => datacenter,
+                'external_url' => external_url
               }
             ]
           }
@@ -765,7 +768,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                   'starts_at' => "2020-01-02T03:04:05.12345678Z",
                   'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                   'status' => 'firing',
-                  'datacenter' => datacenter
+                  'datacenter' => datacenter,
+                  'external_url' => external_url
                 },
                 {
                   'id' => "oldalert",
@@ -781,12 +785,26 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
             raw = topic.posts.first.raw
 
+            expect(raw).to include(<<~RAW)
+            ### [#{datacenter}](#{external_url})
+
+            | Label | Time Range |
+            | --- | --- |
+            RAW
+
+            expect(raw).to include(<<~RAW)
+            ### [#{datacenter2}](#{external_url2})
+
+            | Label | Time Range | Description |
+            | --- | --- | --- |
+            RAW
+
             expect(raw).to match(
-              /#{datacenter}.*oldalert.*date=2020-01-02 time=03:04:05/
+              /oldalert.*date=2020-01-02 time=03:04:05/
             )
 
             expect(raw).to match(
-              /#{datacenter2}.*oldalert.*date=2020-12-31 time=23:59:59/
+              /oldalert.*date=2020-12-31 time=23:59:59/
             )
           end
         end

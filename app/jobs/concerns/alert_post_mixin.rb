@@ -12,7 +12,7 @@ module AlertPostMixin
     silenced_alerts = []
     stale_alerts = []
 
-    alert_history.sort_by { |alert| alert["datacenter"] }.each do |alert|
+    alert_history.each do |alert|
       status = alert['status']
 
       case
@@ -30,13 +30,13 @@ module AlertPostMixin
     output = ""
 
     if firing_alerts.present?
-      output += "## :fire: #{I18n.t("prom_alert_receiver.post.headers.firing")}\n\n#{thead(firing_alerts)}\n"
-      output += firing_alerts.map { |alert| alert_item(alert) }.join("\n")
+      output += "## :fire: #{I18n.t("prom_alert_receiver.post.headers.firing")}\n\n"
+      output = generate_alert_items(firing_alerts, output)
     end
 
     if silenced_alerts.present?
-      output += "\n\n# :shushing_face: Silenced Alerts\n\n#{thead(silenced_alerts)}\n"
-      output += silenced_alerts.map { |alert| alert_item(alert) }.join("\n")
+      output += "\n\n# :shushing_face: Silenced Alerts\n\n"
+      output = generate_alert_items(silenced_alerts, output)
     end
 
     {
@@ -45,8 +45,8 @@ module AlertPostMixin
     }.each do |header, alerts|
       if alerts.present?
         header = I18n.t("prom_alert_receiver.post.headers.#{header}")
-        output += "\n\n## #{header}\n\n#{thead(alerts)}\n"
-        output += alerts.map { |alert| alert_item(alert) }.join("\n")
+        output += "\n\n## #{header}\n\n"
+        output = generate_alert_items(alerts, output)
       end
     end
 
@@ -57,10 +57,9 @@ module AlertPostMixin
     base_key = "prom_alert_receiver.post.table.thead"
     label = I18n.t("#{base_key}.label")
     time_range = I18n.t("#{base_key}.time_range")
-    datacenter = I18n.t("#{base_key}.datacenter")
 
-    headers = "| #{datacenter} | #{label} | #{time_range} |"
-    cells = "| --- | --- | --- |"
+    headers = "| #{label} | #{time_range} |"
+    cells = "| --- | --- |"
 
     if alerts.any? { |alert| alert['description'] }
       description = I18n.t("#{base_key}.description")
@@ -72,7 +71,7 @@ module AlertPostMixin
   end
 
   def alert_item(alert)
-    item = "| #{alert['datacenter']} | [#{alert['id']}](#{alert_link(alert)}) | #{alert_time_range(alert)} |"
+    item = "| [#{alert['id']}](#{alert_link(alert)}) | #{alert_time_range(alert)} |"
 
     if description = alert['description']
       item += " #{description} |"
@@ -187,5 +186,18 @@ module AlertPostMixin
     alerts.each_with_object(Set.new) do |alert, set|
       set << alert['datacenter'] if alert['datacenter']
     end.to_a
+  end
+
+  def generate_alert_items(grouped_alerts, output)
+    grouped_alerts
+      .group_by { |alert| [alert['datacenter'], alert['external_url']] }
+      .each do |(datacenter, external_url), alerts|
+
+      output += "### [#{datacenter}](#{external_url})\n\n#{thead(alerts)}\n"
+      output += alerts.map { |alert| alert_item(alert) }.join("\n")
+      output += "\n\n"
+    end
+
+    output
   end
 end

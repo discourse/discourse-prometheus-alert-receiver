@@ -12,7 +12,6 @@ en:
         stale: "Stale Alerts"
       table:
         thead:
-          datacenter: "DC"
           label: "Label"
           time_range: "Time Range"
           description: "Description"

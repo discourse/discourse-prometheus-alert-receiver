@@ -126,13 +126,10 @@ module AlertPostMixin
                       alert_history:,
                       prev_topic_id:)
 
-    <<~BODY
-    #{topic_body}
-
-    #{prev_topic_link(prev_topic_id)}
-
-    #{render_alerts(alert_history)}
-    BODY
+    output = ""
+    output += "#{topic_body}\n\n"
+    output += "#{prev_topic_link(prev_topic_id)}\n\n" if prev_topic_id
+    output += "#{render_alerts(alert_history)}\n"
   end
 
   def revise_topic(topic:, title:, raw:, datacenters:, firing: nil, high_priority: false)

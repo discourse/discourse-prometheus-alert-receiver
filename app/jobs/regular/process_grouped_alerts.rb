@@ -14,8 +14,8 @@ module Jobs
         token
       )
 
-      # mark_stale_alerts(receiver, data, graph_url)
-      # process_silenced_alerts(receiver, data)
+      mark_stale_alerts(receiver, data, graph_url)
+      process_silenced_alerts(receiver, data)
     end
 
     private
@@ -98,34 +98,38 @@ module Jobs
               topic.custom_fields[alert_history_key]&.dig('alerts') || []
             end
 
-            silence_alerts(stored_alerts, active_alerts,
+            silenced = silence_alerts(stored_alerts, active_alerts,
               datacenter: group["labels"]["datacenter"]
             )
 
-            topic.save_custom_fields(true)
+            if silenced
+              topic.save_custom_fields(true)
 
-            raw = first_post_body(
-              receiver: receiver,
-              topic_body: annotations["topic_body"],
-              alert_history: stored_alerts,
-              prev_topic_id: topic.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD]
-            )
+              raw = first_post_body(
+                receiver: receiver,
+                topic_body: annotations["topic_body"],
+                alert_history: stored_alerts,
+                prev_topic_id: topic.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD]
+              )
 
-            revise_topic(
-              topic: topic,
-              title: annotations["topic_title"],
-              raw: raw,
-              datacenters: datacenters(stored_alerts),
-              firing: stored_alerts.any? { |alert| is_firing?(alert["status"]) }
-            )
+              revise_topic(
+                topic: topic,
+                title: annotations["topic_title"],
+                raw: raw,
+                datacenters: datacenters(stored_alerts),
+                firing: stored_alerts.any? { |alert| is_firing?(alert["status"]) }
+              )
 
-            publish_alert_counts
+              publish_alert_counts
+            end
           end
         end
       end
     end
 
     def silence_alerts(stored_alerts, active_alerts, datacenter:)
+      silenced = false
+
       stored_alerts.each do |alert|
         active = active_alerts.find do |active_alert|
           active_alert["labels"]["id"] == alert["id"] &&
@@ -136,9 +140,16 @@ module Jobs
 
         if active
           alert["description"] = active.dig("annotations", "description")
-          alert["status"] = active["status"]["state"]
+          state = active["status"]["state"]
+
+          if alert["status"] != state
+            alert["status"] = state
+            silenced ||= true
+          end
         end
       end
+
+      silenced
     end
 
     def publish_alert_counts

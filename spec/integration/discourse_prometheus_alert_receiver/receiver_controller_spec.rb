@@ -271,9 +271,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             alerts = topic.reload.custom_fields[key]["alerts"]
 
             [
+              ['doesnotexists', 'stale'],
               ['somethingfunny', 'suppressed'],
-              ['somethingnotfunny', 'suppressed'],
-              ['doesnotexists', 'stale']
+              ['somethingnotfunny', 'suppressed']
             ].each do |id, status|
               expect(alerts.find { |alert| alert['id'] == id }["status"])
                 .to eq(status)
@@ -296,20 +296,30 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             end
 
             expect(raw).to match(
-              /#{datacenter}.*somethingfunny.*date=2018-07-24 time=23:25:31/
+              /somethingfunny.*date=2018-07-24 time=23:25:31/
             )
 
             expect(raw).to match(
-              /#{datacenter}.*somethingnotfunny.*date=2018-07-24 time=23:25:31/
+              /somethingnotfunny.*date=2018-07-24 time=23:25:31/
             )
 
             expect(raw).to match(
-              /#{datacenter2}.*doesnotexists.*date=2018-07-24 time=23:25:31/
+              /doesnotexists.*date=2018-07-24 time=23:25:31/
             )
 
             expect(
               topic.custom_fields[custom_field_key]['alerts'].first['description']
             ).to eq('some description')
+          end
+
+          it 'should not update the topic if nothing has changed' do
+            post "/prometheus/receiver/grouped/alerts/#{token}", params: payload
+
+            messages = MessageBus.track_publish do
+              post "/prometheus/receiver/grouped/alerts/#{token}", params: payload
+            end
+
+            expect(messages).to eq([])
           end
         end
       end

@@ -33,7 +33,8 @@ module Jobs
         end
 
         alert_history = update_alert_history(prev_alert_history, params["alerts"],
-          datacenter: params["commonLabels"]["datacenter"]
+          datacenter: params["commonLabels"]["datacenter"],
+          external_url: params["externalURL"]
         )
 
         raw = first_post_body(
@@ -61,7 +62,8 @@ module Jobs
         return
       else
         alert_history = update_alert_history([], params["alerts"],
-          datacenter: params["commonLabels"]["datacenter"]
+          datacenter: params["commonLabels"]["datacenter"],
+          external_url: params["externalURL"]
         )
 
         topic = create_new_topic(receiver, params, alert_history)
@@ -186,7 +188,10 @@ module Jobs
       end
     end
 
-    def update_alert_history(previous_history, active_alerts, datacenter:)
+    def update_alert_history(previous_history, active_alerts,
+                             datacenter:,
+                             external_url:)
+
       # Sadly, this is the easiest way to get a deep dup
       JSON.parse(previous_history.to_json).tap do |new_history|
         active_alerts.sort_by { |a| a['startsAt'] }.each do |alert|
@@ -206,7 +211,8 @@ module Jobs
               'graph_url' => alert['generatorURL'],
               'status' => alert['status'],
               'description' => alert_description,
-              'datacenter' => datacenter
+              'datacenter' => datacenter,
+              'external_url' => external_url
             }
 
             new_history << stored_alert
@@ -214,6 +220,7 @@ module Jobs
             stored_alert['status'] = alert['status']
             stored_alert['description'] = alert_description
             stored_alert['datacenter'] = datacenter
+            stored_alert['external_url'] = external_url
             stored_alert.delete('ends_at') if firing
           end
 

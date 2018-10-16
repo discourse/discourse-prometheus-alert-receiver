@@ -355,6 +355,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
       end
 
       let(:response_sla) { '4hours' }
+      let(:external_url) { "supposed.to.be.a.url" }
 
       let!(:assignee) do
         Fabricate(:user).tap do |u|
@@ -366,6 +367,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         {
           "version" => "4",
           "status" => "firing",
+          "externalURL" => external_url,
           "groupKey" => group_key,
           "groupLabels" => {
             "foo" => "bar",
@@ -449,7 +451,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                 'status' => 'firing',
                 'description' => 'some description',
-                'datacenter' => datacenter
+                'datacenter' => datacenter,
+                'external_url' => external_url
               },
             ]
           )
@@ -594,7 +597,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                 'status' => 'resolved',
                 'description' => 'some description',
-                'datacenter' => datacenter
+                'datacenter' => datacenter,
+                'external_url' => external_url
               },
               {
                 'id' => 'somethingnotfunny',
@@ -692,7 +696,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                 'status' => 'firing',
                 'description' => 'some description',
-                'datacenter' => datacenter
+                'datacenter' => datacenter,
+                'external_url' => external_url
               },
               {
                 'id' => "newalert",
@@ -700,7 +705,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                 'status' => 'firing',
                 'description' => 'some description',
-                'datacenter' => datacenter
+                'datacenter' => datacenter,
+                'external_url' => external_url
               },
             ]
           )
@@ -713,8 +719,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
         describe 'from another datacenter' do
           let(:datacenter2) { "datacenter-2" }
+          let(:external_url2) { "supposed.be.a.url.2" }
 
           before do
+            payload["externalURL"] = external_url2
             payload["commonLabels"]["datacenter"] = datacenter2
 
             payload["alerts"] = [
@@ -765,7 +773,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                   'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                   'status' => 'firing',
                   'description' => 'some description',
-                  'datacenter' => datacenter2
+                  'datacenter' => datacenter2,
+                  'external_url' => external_url2
                 },
               ]
             )
@@ -834,7 +843,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                 'status' => 'firing',
                 'description' => 'some description',
-                'datacenter' => datacenter
+                'datacenter' => datacenter,
+                'external_url' => external_url
               },
             ]
           )
@@ -933,7 +943,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                 'status' => 'firing',
                 'description' => 'some description',
-                'datacenter' => datacenter
+                'datacenter' => datacenter,
+                'external_url' => external_url
               },
             ]
           )

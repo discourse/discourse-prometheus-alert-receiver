@@ -15,7 +15,7 @@ module Jobs
       )
 
       # mark_stale_alerts(receiver, data, graph_url)
-      process_silenced_alerts(receiver, data)
+      # process_silenced_alerts(receiver, data)
     end
 
     private

@@ -11,7 +11,9 @@ module Jobs
         @token
       )
 
-      assigned_topic(receiver, params)
+      DistributedMutex.synchronize("prom_alert_receiver_#{group_key(params)}") do
+        assigned_topic(receiver, params)
+      end
     end
 
     private

@@ -1,5 +1,7 @@
 module Jobs
   class ProcessGroupedAlerts < Jobs::Base
+    sidekiq_options retry: false
+
     include AlertPostMixin
 
     STALE_DURATION = 5.freeze

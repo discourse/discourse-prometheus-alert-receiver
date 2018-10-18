@@ -123,7 +123,7 @@ module Jobs
           ] = receiver["topic_map"][group_key(params)]
         end
 
-        t.save_custom_fields(true)
+        t.save_custom_fields
 
         receiver[:topic_map][group_key(params)] = t.id
 

@@ -123,8 +123,6 @@ module Jobs
           ] = receiver["topic_map"][group_key(params)]
         end
 
-        t.save_custom_fields
-
         receiver[:topic_map][group_key(params)] = t.id
 
         PluginStore.set(::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,

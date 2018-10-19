@@ -30,13 +30,15 @@ after_initialize do
     end
   end
 
-  %i{
-    tagging_enabled
-    allow_duplicate_topic_titles
-  }.each do |setting|
+  unless Rails.env.test?
+    %i{
+      tagging_enabled
+      allow_duplicate_topic_titles
+    }.each do |setting|
 
-    unless SiteSetting.public_send(setting)
-      SiteSetting.public_send("#{setting}=", true)
+      unless SiteSetting.public_send(setting)
+        SiteSetting.public_send("#{setting}=", true)
+      end
     end
   end
 

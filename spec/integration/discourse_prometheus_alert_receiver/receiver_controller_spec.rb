@@ -100,6 +100,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
     before do
       SiteSetting.queue_jobs = false
+      SiteSetting.tagging_enabled = true
     end
 
     describe 'when token is missing or too short' do

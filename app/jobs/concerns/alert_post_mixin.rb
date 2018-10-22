@@ -103,7 +103,7 @@ module AlertPostMixin
     url_params['g0.range_input'] = "#{(end_t - begin_t).to_i + 600}s"
     url_params['g0.end_input']   = "#{(end_t + 300).strftime("%Y-%m-%d %H:%M")}"
     url_params['g0.tab'] = ["0"]
-    url.query    = URI.encode_www_form(url_params)
+    url.query = URI.encode_www_form(url_params)
     url.to_s
   end
 

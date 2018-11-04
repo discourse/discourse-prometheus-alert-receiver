@@ -112,7 +112,7 @@ module AlertPostMixin
     created_at = Topic.where(id: topic_id).pluck(:created_at).first
     return "" unless created_at
 
-    "([Previous alert topic created.](#{Discourse.base_url}/t/#{topic_id}) #{local_date(created_at.to_s)})\n\n"
+    "[Previous alert](#{Discourse.base_url}/t/#{topic_id}) #{local_date(created_at.to_s)}\n\n"
   end
 
   def first_post_body(receiver:,
@@ -122,8 +122,8 @@ module AlertPostMixin
 
     output = ""
     output += "#{topic_body}\n\n"
-    output += "#{prev_topic_link(prev_topic_id)}\n\n" if prev_topic_id
-    output += "#{render_alerts(alert_history)}\n"
+    output += "#{render_alerts(alert_history)}\n\n"
+    output += "#{prev_topic_link(prev_topic_id)}\n" if prev_topic_id
   end
 
   def revise_topic(topic:, title:, raw:, datacenters:, firing: nil, high_priority: false)

@@ -112,7 +112,7 @@ module AlertPostMixin
     created_at = Topic.where(id: topic_id).pluck(:created_at).first
     return "" unless created_at
 
-    "([Previous alert topic created.](#{Discourse.base_url}/t/#{topic_id}) #{local_date(created_at.to_s)})\n\n"
+    "[Previous alert](#{Discourse.base_url}/t/#{topic_id}) #{local_date(created_at.to_s)}\n\n"
   end
 
   def first_post_body(receiver:,

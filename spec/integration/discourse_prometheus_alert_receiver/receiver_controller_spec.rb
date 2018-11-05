@@ -976,7 +976,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(keyed_topic.assigned_to_user.id).to eq(assignee.id)
 
           expect(keyed_topic.posts.first.raw).to match(
-            /\[Previous alert topic created\.\]\(http:\/\/test\.localhost\/t\/#{closed_topic.id}\).*date=2018-07-27 time=19:33:44/
+            /\[Previous alert\]\(http:\/\/test\.localhost\/t\/#{closed_topic.id}\).*date=2018-07-27 time=19:33:44/
           )
         end
       end

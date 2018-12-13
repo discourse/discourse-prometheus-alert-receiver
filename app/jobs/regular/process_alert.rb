@@ -6,12 +6,13 @@ module Jobs
       @token = args[:token]
       params = args[:params]
 
-      receiver = PluginStore.get(
-        ::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
-        @token
-      )
+      DistributedMutex.synchronize("prom-alert-#{@token}") do
 
-      DistributedMutex.synchronize("prom_alert_receiver_#{group_key(params)}") do
+        receiver = PluginStore.get(
+          ::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
+          @token
+        )
+
         assigned_topic(receiver, params)
       end
     end

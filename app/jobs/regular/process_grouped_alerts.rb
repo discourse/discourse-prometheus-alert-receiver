@@ -119,7 +119,7 @@ module Jobs
 
                 revise_topic(
                   topic: topic,
-                  title: annotations["topic_title"],
+                  title: generate_title(annotations["topic_title"], stored_alerts),
                   raw: raw,
                   datacenters: datacenters(stored_alerts),
                   firing: stored_alerts.any? { |alert| is_firing?(alert["status"]) }

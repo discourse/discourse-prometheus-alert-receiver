@@ -10,3 +10,7 @@ en:
         firing: "Firing Alerts"
         history: "Alert History"
         stale: "Stale Alerts"
+    topic_title: 
+      not_firing: "%{base_title}"
+      firing: "%{base_title} (%{count} firing)"
+      

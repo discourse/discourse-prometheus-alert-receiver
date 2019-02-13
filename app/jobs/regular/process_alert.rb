@@ -47,8 +47,10 @@ module Jobs
           prev_topic_id: topic.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD]
         )
 
-        title = params["commonAnnotations"]["topic_title"] ||
+        base_title = params["commonAnnotations"]["topic_title"] ||
           "#{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}"
+
+        title = generate_title(base_title, alert_history)
 
         revise_topic(
           topic: topic,
@@ -84,8 +86,10 @@ module Jobs
     end
 
     def create_new_topic(receiver, params, alert_history)
-      topic_title = params["commonAnnotations"]["topic_title"] ||
+      base_title = params["commonAnnotations"]["topic_title"] ||
         "#{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}"
+
+      topic_title = generate_title(base_title, alert_history)
 
       datacenter = params["commonLabels"]["datacenter"]
       topic_body = params["commonAnnotations"]["topic_body"]

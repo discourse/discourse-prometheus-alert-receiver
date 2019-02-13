@@ -115,6 +115,15 @@ module AlertPostMixin
     "[Previous alert](#{Discourse.base_url}/t/#{topic_id}) #{local_date(created_at.to_s)}\n\n"
   end
 
+  def generate_title(base_title, alert_history)
+    firing_count = alert_history&.count { |alert| is_firing?(alert["status"]) }
+    if firing_count > 0
+      I18n.t("prom_alert_receiver.topic_title.firing", base_title: base_title, count: firing_count)
+    else
+      I18n.t("prom_alert_receiver.topic_title.not_firing", base_title: base_title)
+    end
+  end
+
   def first_post_body(receiver:,
                       topic_body: "",
                       alert_history:,
@@ -162,6 +171,10 @@ module AlertPostMixin
         skip_validations: true,
         validate_topic: true # This is a very weird API
       )
+      if firing && title_changed
+        topic.update_column(:bumped_at, Time.now)
+        TopicTrackingState.publish_latest(topic)
+      end
     end
   end
 

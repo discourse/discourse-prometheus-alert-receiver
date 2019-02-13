@@ -450,7 +450,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           )
 
           expect(topic.title).to eq(
-            "Alert investigation required: AnAlert is on the loose"
+            "Alert investigation required: AnAlert is on the loose (1 firing)"
           )
 
           expect(receiver["topic_map"][alert_name]).to eq(topic.id)
@@ -510,7 +510,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             post "/prometheus/receiver/#{token}", params: payload
           end.to change { Topic.count }.by(1)
 
-          expect(topic.title).to eq("foo: bar, baz: wombat")
+          expect(topic.title).to eq("foo: bar, baz: wombat (1 firing)")
 
           expect(topic.tags.pluck(:name)).to contain_exactly(
             datacenter,
@@ -591,7 +591,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(messages.first.data[:firing_alerts_count]).to eq(1)
 
           expect(topic.title).to eq(
-            "Alert investigation required: AnAlert is on the loose"
+            "Alert investigation required: AnAlert is on the loose (1 firing)"
           )
 
           expect(topic.tags.pluck(:name)).to contain_exactly(
@@ -692,7 +692,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           topic.reload
 
           expect(topic.title).to eq(
-            "Alert investigation required: AnAlert is on the loose"
+            "Alert investigation required: AnAlert is on the loose (2 firing)"
           )
 
           expect(topic.tags.pluck(:name)).to contain_exactly(
@@ -730,6 +730,40 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(raw).to match(/newalert.*date=2020-12-31 time=23:59:59/)
         end
 
+        it "bumps the existing topic correctly" do
+          freeze_time(1.hour.from_now) do
+            expect do
+              post "/prometheus/receiver/#{token}", params: payload
+            end.to change { topic.reload.bumped_at }
+
+            expect(topic.reload.title).to eq(
+              "Alert investigation required: AnAlert is on the loose (2 firing)"
+            )
+          end
+
+          freeze_time(2.hours.from_now) do
+            payload["alerts"][0]["status"] = "stale"
+            expect do
+              post "/prometheus/receiver/#{token}", params: payload
+            end.to change { topic.reload.bumped_at }
+
+            expect(topic.reload.title).to eq(
+              "Alert investigation required: AnAlert is on the loose (1 firing)"
+            )
+          end
+
+          freeze_time(3.hours.from_now) do
+            payload["alerts"][1]["status"] = "stale"
+            expect do
+              post "/prometheus/receiver/#{token}", params: payload
+            end.to_not change { topic.reload.bumped_at }
+
+            expect(topic.reload.title).to eq(
+              "Alert investigation required: AnAlert is on the loose"
+            )
+          end
+        end
+
         describe 'from another datacenter' do
           let(:datacenter2) { "datacenter-2" }
           let(:external_url2) { "supposed.be.a.url.2" }
@@ -761,7 +795,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             topic.reload
 
             expect(topic.title).to eq(
-              "Alert investigation required: AnAlert is on the loose"
+              "Alert investigation required: AnAlert is on the loose (2 firing)"
             )
 
             expect(topic.tags.pluck(:name)).to contain_exactly(
@@ -948,7 +982,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           )
 
           expect(keyed_topic.title).to eq(
-            "Alert investigation required: AnAlert is on the loose"
+            "Alert investigation required: AnAlert is on the loose (1 firing)"
           )
 
           expect(keyed_topic.tags.pluck(:name)).to contain_exactly(

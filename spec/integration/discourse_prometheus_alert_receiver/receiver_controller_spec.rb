@@ -99,7 +99,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
     end
 
     before do
-      SiteSetting.queue_jobs = false
+      Jobs.run_immediately!
       SiteSetting.tagging_enabled = true
     end
 

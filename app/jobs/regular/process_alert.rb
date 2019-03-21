@@ -58,7 +58,7 @@ module Jobs
           raw: raw,
           datacenters: datacenters(alert_history),
           firing: alert_history.any? { |alert| is_firing?(alert["status"]) },
-          high_priority: params["commonLabels"]["response_sla"] != next_business_day_sla
+          high_priority: params["commonLabels"]["response_sla"] != AlertPostMixin::NEXT_BUSINESS_DAY_SLA
         )
 
         assign_alert(topic, receiver) unless topic.assigned_to_user
@@ -98,7 +98,7 @@ module Jobs
 
       tags << AlertPostMixin::FIRING_TAG.dup if is_firing?(params['status'])
 
-      if params["commonLabels"]["response_sla"] != next_business_day_sla
+      if params["commonLabels"]["response_sla"] != AlertPostMixin::NEXT_BUSINESS_DAY_SLA
         tags << AlertPostMixin::HIGH_PRIORITY_TAG.dup
       end
 
@@ -154,10 +154,6 @@ module Jobs
         end
 
       Group.find_by(attributes).users.sample
-    end
-
-    def next_business_day_sla
-      "nbd"
     end
 
     def assign_alert(topic, receiver, assignee: nil)

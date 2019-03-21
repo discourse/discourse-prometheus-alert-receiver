@@ -3,6 +3,7 @@ module AlertPostMixin
 
   FIRING_TAG = "firing".freeze
   HIGH_PRIORITY_TAG = "high-priority".freeze
+  NEXT_BUSINESS_DAY_SLA = "nbd".freeze
 
   private
 

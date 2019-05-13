@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # name: discourse-prometheus-alert-receiver
 # about: Receives a Prometheus webhook and creates a topic in Discourse
 # version: 0.1

@@ -24,6 +24,7 @@ after_initialize do
     ALERT_HISTORY_CUSTOM_FIELD  = 'prom_alert_history'.freeze
     PREVIOUS_TOPIC_CUSTOM_FIELD = 'prom_previous_topic'.freeze
     TOPIC_BODY_CUSTOM_FIELD = 'prom_alert_topic_body'.freeze
+    TOPIC_BASE_TITLE_CUSTOM_FIELD = 'prom_alert_topic_base_title'.freeze
     TOPIC_TITLE_CUSTOM_FIELD = 'prom_alert_topic_title'.freeze
 
     class Engine < ::Rails::Engine

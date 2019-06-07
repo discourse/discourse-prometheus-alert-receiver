@@ -68,14 +68,18 @@ module Jobs
             topic.save_custom_fields(true)
             klass = DiscoursePrometheusAlertReceiver
 
+            if base_title = topic.custom_fields[klass::TOPIC_BASE_TITLE_CUSTOM_FIELD]
+              title = generate_title(base_title, alerts)
+            else
+              title = topic.custom_fields[klass::TOPIC_TITLE_CUSTOM_FIELD] || ''
+            end
+
             raw = first_post_body(
               receiver: receiver,
               topic_body: topic.custom_fields[klass::TOPIC_BODY_CUSTOM_FIELD] || '',
               alert_history: alerts,
               prev_topic_id: topic.custom_fields[klass::PREVIOUS_TOPIC_CUSTOM_FIELD]
             )
-
-            title = topic.custom_fields[klass::TOPIC_TITLE_CUSTOM_FIELD] || ''
 
             revise_topic(
               topic: topic,

@@ -121,6 +121,10 @@ module Jobs
         ] = topic_body
 
         t.custom_fields[
+          DiscoursePrometheusAlertReceiver::TOPIC_BASE_TITLE_CUSTOM_FIELD
+        ] = base_title
+
+        t.custom_fields[
           DiscoursePrometheusAlertReceiver::TOPIC_TITLE_CUSTOM_FIELD
         ] = topic_title
 

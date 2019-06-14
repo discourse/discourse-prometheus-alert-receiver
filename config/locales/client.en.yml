@@ -3,6 +3,6 @@ en:
     filters:
       alerts-category:
         title_with_count:
-          one: "Alerts (1)"
+          one: "Alerts (%{count})"
           other: "Alerts (%{count})"
         help: "Open alerts requiring handling"

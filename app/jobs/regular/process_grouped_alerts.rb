@@ -6,7 +6,7 @@ module Jobs
 
     include AlertPostMixin
 
-    STALE_DURATION = 20.freeze
+    STALE_DURATION = 2880.freeze
 
     def execute(args)
       token = args[:token]

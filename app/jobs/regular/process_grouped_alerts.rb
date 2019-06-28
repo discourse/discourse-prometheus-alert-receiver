@@ -6,7 +6,7 @@ module Jobs
 
     include AlertPostMixin
 
-    STALE_DURATION = 2880.freeze
+    STALE_DURATION = 5.freeze
 
     def execute(args)
       token = args[:token]
@@ -55,7 +55,7 @@ module Jobs
               end
 
               if is_stale &&
-                STALE_DURATION.minute.since > DateTime.parse(alert["starts_at"])
+                STALE_DURATION.minute.ago > DateTime.parse(alert["starts_at"])
 
                 alert["status"] = "stale"
                 updated = true

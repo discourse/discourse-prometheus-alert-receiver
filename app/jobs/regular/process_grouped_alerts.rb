@@ -51,8 +51,7 @@ module Jobs
           alerts&.each do |alert|
             if alert['graph_url'].include?(graph_url) && is_firing?(alert['status'])
               is_stale = !current_alerts(data).any? do |current_alert|
-                current_alert['labels']['id'] == alert['id'] &&
-                  DateTime.parse(current_alert['startsAt']).to_s == DateTime.parse(alert['starts_at']).to_s
+                current_alert['labels']['id'] == alert['id']
               end
 
               if is_stale &&

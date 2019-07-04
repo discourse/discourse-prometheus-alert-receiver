@@ -121,6 +121,7 @@ after_initialize do
   ::DiscoursePrometheusAlertReceiver::Engine.routes.draw do
     token_format = /[a-f0-9]{64}/
     post "/receiver/:token" => "receiver#receive", token: token_format, as: :receive
+    post "/receiver/resync/:token" => "receiver#receive_grouped_alerts", token: token_format
     post "/receiver/grouped/alerts/:token" => "receiver#receive_grouped_alerts", token: token_format, as: :receive_grouped_alerts
     post "/receiver/generate" => "receiver#generate_receiver_url", constraints: AdminConstraint.new
   end

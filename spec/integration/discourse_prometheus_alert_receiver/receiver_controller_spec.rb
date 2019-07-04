@@ -330,6 +330,132 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           end
         end
 
+        describe 'when payload includes silenced alerts in the new format' do
+          let(:payload) do
+            {
+              "status" => "success",
+              "externalURL" => "supposed.to.be.a.url",
+              "graphURL" => "to.be.a.url",
+              "data" => [
+                {
+                  "labels" => {
+                    "alertname" => alert_name,
+                    "datacenter" => "somedatacenter",
+                    'id' => 'somethingnotfunny',
+                    "instance" => "someinstance",
+                    "job" => "somejob",
+                    "notify" => "live"
+                  },
+                  "annotations" => {
+                    "description" => "some description",
+                    "topic_body" => "some body",
+                    "topic_title" => "some title"
+                  },
+                  "startsAt" => "2018-07-24T23:25:31.363742334Z",
+                  "endsAt" => "0001-01-01T00:00:00Z",
+                  "generatorURL" => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
+                  "status" => {
+                    "state" => "suppressed",
+                    "silencedBy" => [
+                      "1de62db1-ac72-48d8-b2d0-7ce0e8acdcb1"
+                    ],
+                    "inhibitedBy" => nil
+                  },
+                  "receivers" => nil,
+                  "fingerprint" => "09aae3ea59ed5a65"
+                },
+                {
+                  "labels" => {
+                    "alertname" => alert_name,
+                    "datacenter" => "somedatacenter",
+                    'id' => 'somethingfunny',
+                    "instance" => "someinstance",
+                    "job" => "somejob",
+                    "notify" => "live"
+                  },
+                  "annotations" => {
+                    "description" => "some description",
+                    "topic_body" => "some body",
+                    "topic_title" => "some title"
+                  },
+                  "startsAt" => "2018-07-24T23:25:31.363742334Z",
+                  "endsAt" => "0001-01-01T00:00:00Z",
+                  "generatorURL" => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
+                  "status" => {
+                    "state" => "suppressed",
+                    "silencedBy" => [
+                      "1de62db1-ac72-48d8-b2d0-7ce0e8acdcb1"
+                    ],
+                    "inhibitedBy" => nil
+                  },
+                  "receivers" => nil,
+                  "fingerprint" => "09aae3ea59ed5a65"
+                }
+              ]
+            }
+          end
+
+          it 'should update the alerts correctly' do
+            post "/prometheus/receiver/grouped/alerts/#{token}", params: payload
+
+            expect(response.status).to eq(200)
+
+            key = DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD
+            alerts = topic.reload.custom_fields[key]["alerts"]
+
+            [
+              ['doesnotexists', 'stale'],
+              ['somethingfunny', 'suppressed'],
+              ['somethingnotfunny', 'suppressed']
+            ].each do |id, status|
+              expect(alerts.find { |alert| alert['id'] == id }["status"])
+                .to eq(status)
+            end
+
+            expect(topic.title).to eq("some title")
+
+            expect(topic.tags.pluck(:name)).to contain_exactly(
+              datacenter,
+              datacenter2
+            )
+
+            raw = first_post.reload.raw
+
+            [
+              "# :shushing_face: Silenced Alerts",
+              "## #{I18n.t('prom_alert_receiver.post.headers.stale')}",
+            ].each do |content|
+              expect(raw).to include(content)
+            end
+
+            expect(raw).to match(
+              /somethingfunny.*date=2018-07-24 time=23:25:31/
+            )
+
+            expect(raw).to match(
+              /somethingnotfunny.*date=2018-07-24 time=23:25:31/
+            )
+
+            expect(raw).to match(
+              /doesnotexists.*date=2018-07-24 time=23:25:31/
+            )
+
+            expect(
+              topic.custom_fields[custom_field_key]['alerts'].first['description']
+            ).to eq('some description')
+          end
+
+          it 'should not update the topic if nothing has changed' do
+            post "/prometheus/receiver/grouped/alerts/#{token}", params: payload
+
+            messages = MessageBus.track_publish do
+              post "/prometheus/receiver/grouped/alerts/#{token}", params: payload
+            end
+
+            expect(messages).to eq([])
+          end
+        end
+
         describe 'when payload is missing one alert' do
           let(:payload) do
             {

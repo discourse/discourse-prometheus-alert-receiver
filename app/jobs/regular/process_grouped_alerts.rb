@@ -18,8 +18,16 @@ module Jobs
         token
       )
 
-      mark_stale_alerts(receiver, data, graph_url)
-      process_silenced_alerts(receiver, data)
+      if data[0]&.key?("blocks")
+        # Data from {{alertmanager}}/api/v1/alerts/grouped (removed in alertmanager v0.16.0)
+        current_alerts = current_alerts(data)
+      else
+        # Data from {{alertmanager}}/api/v1/alerts
+        current_alerts = data
+      end
+
+      mark_stale_alerts(receiver, current_alerts, graph_url)
+      process_silenced_alerts(receiver, current_alerts)
     end
 
     private
@@ -42,7 +50,7 @@ module Jobs
       end
     end
 
-    def mark_stale_alerts(receiver, data, graph_url)
+    def mark_stale_alerts(receiver, current_alerts, graph_url)
       Topic.firing_alerts.each do |topic|
         DistributedMutex.synchronize("prom_alert_receiver_topic_#{topic.id}") do
           alerts = topic.custom_fields.dig(alert_history_key, 'alerts')
@@ -50,7 +58,7 @@ module Jobs
 
           alerts&.each do |alert|
             if alert['graph_url'].include?(graph_url) && is_firing?(alert['status'])
-              is_stale = !current_alerts(data).any? do |current_alert|
+              is_stale = !current_alerts.any? do |current_alert|
                 current_alert['labels']['id'] == alert['id']
               end
 
@@ -94,44 +102,43 @@ module Jobs
       end
     end
 
-    def process_silenced_alerts(receiver, data)
-      data.each do |group|
-        topic = Topic.find_by(id: receiver[:topic_map][group["labels"]["alertname"]])
+    def process_silenced_alerts(receiver, current_alerts)
+      grouped_alerts = current_alerts.group_by { |a| a["labels"]["alertname"] }
+
+      grouped_alerts.each do |alertname, active_alerts|
+        topic = Topic.find_by(id: receiver[:topic_map][alertname])
 
         if topic
           DistributedMutex.synchronize("prom_alert_receiver_topic_#{topic.id}") do
-            group["blocks"].each do |block|
-              active_alerts = block["alerts"]
-              annotations = active_alerts.first["annotations"]
+            annotations = active_alerts.first["annotations"]
 
-              stored_alerts = begin
-                topic.custom_fields[alert_history_key]&.dig('alerts') || []
-              end
+            stored_alerts = begin
+              topic.custom_fields[alert_history_key]&.dig('alerts') || []
+            end
 
-              silenced = silence_alerts(stored_alerts, active_alerts,
-                datacenter: group["labels"]["datacenter"]
+            silenced = silence_alerts(stored_alerts, active_alerts,
+              datacenter: active_alerts[0]["labels"]["datacenter"]
+            )
+
+            if silenced
+              topic.save_custom_fields(true)
+
+              raw = first_post_body(
+                receiver: receiver,
+                topic_body: annotations["topic_body"],
+                alert_history: stored_alerts,
+                prev_topic_id: topic.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD]
               )
 
-              if silenced
-                topic.save_custom_fields(true)
+              revise_topic(
+                topic: topic,
+                title: generate_title(annotations["topic_title"], stored_alerts),
+                raw: raw,
+                datacenters: datacenters(stored_alerts),
+                firing: stored_alerts.any? { |alert| is_firing?(alert["status"]) }
+              )
 
-                raw = first_post_body(
-                  receiver: receiver,
-                  topic_body: annotations["topic_body"],
-                  alert_history: stored_alerts,
-                  prev_topic_id: topic.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD]
-                )
-
-                revise_topic(
-                  topic: topic,
-                  title: generate_title(annotations["topic_title"], stored_alerts),
-                  raw: raw,
-                  datacenters: datacenters(stored_alerts),
-                  firing: stored_alerts.any? { |alert| is_firing?(alert["status"]) }
-                )
-
-                publish_alert_counts
-              end
+              publish_alert_counts
             end
           end
         end

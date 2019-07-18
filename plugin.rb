@@ -82,7 +82,7 @@ after_initialize do
   add_to_class(:user, :include_alert_counts?) do
     @include_alert_counts ||= begin
       SiteSetting.prometheus_alert_receiver_custom_nav_group.blank? ||
-      groups.exists?(name: SiteSetting.prometheus_alert_receiver_custom_nav_group)
+      groups.exists?(name: SiteSetting.prometheus_alert_receiver_custom_nav_group.split("|"))
     end
   end
 

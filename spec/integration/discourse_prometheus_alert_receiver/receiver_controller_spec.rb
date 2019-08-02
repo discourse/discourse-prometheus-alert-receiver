@@ -445,6 +445,26 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             ).to eq('some description')
           end
 
+          it "should restore alerts when they are unsilenced" do
+
+            post "/prometheus/receiver/grouped/alerts/#{token}", params: payload
+            expect(
+              topic.reload.custom_fields[custom_field_key]['alerts'].
+                  find { |a| a["id"] == "somethingnotfunny" }['status']
+            ).to eq('suppressed')
+
+            payload["data"].find {
+              |a| a["labels"]["id"] == "somethingnotfunny"
+            }["status"]["state"] = "firing"
+
+            post "/prometheus/receiver/grouped/alerts/#{token}", params: payload
+
+            expect(
+              topic.reload.custom_fields[custom_field_key]['alerts'].
+              find { |a| a["id"] == "somethingnotfunny" }['status']
+            ).to eq('firing')
+          end
+
           it 'should not update the topic if nothing has changed' do
             post "/prometheus/receiver/grouped/alerts/#{token}", params: payload
 

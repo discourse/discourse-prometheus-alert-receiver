@@ -1194,6 +1194,29 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           )
         end
 
+        it "does not change the existing topic, even if the start time is different" do
+          # Can happen in a clustered alertmanager setup
+          payload["alerts"].first["startsAt"] = "2020-01-02T03:05:05.87654321Z"
+
+          expect do
+            post "/prometheus/receiver/#{token}", params: payload
+          end.to_not change { topic.reload.posts.first.revisions.count }
+
+          expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
+            [
+              {
+                'id' => "somethingfunny",
+                'starts_at' => "2020-01-02T03:04:05.12345678Z",
+                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
+                'status' => 'firing',
+                'description' => 'some description',
+                'datacenter' => datacenter,
+                'external_url' => external_url
+              },
+            ]
+          )
+        end
+
         it 'reassigns the alert if topic has no assignee' do
           TopicAssigner.new(topic, Discourse.system_user).unassign
 
@@ -1313,7 +1336,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'id' => 'somethingfunny',
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'status' => "resolved",
+                'status' => "firing",
                 'datacenter' => datacenter
               }
             ]

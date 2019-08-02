@@ -201,7 +201,8 @@ module Jobs
 
           stored_alert = new_history.find do |p|
             p['id'] == alert['labels']['id'] &&
-              DateTime.parse(p['starts_at']).to_s == DateTime.parse(alert['startsAt']).to_s
+              p['datacenter'] == datacenter &&
+              p["status"] != "resolved"
           end
 
           alert_description = alert.dig('annotations', 'description')

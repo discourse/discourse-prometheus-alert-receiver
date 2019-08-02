@@ -455,7 +455,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
             payload["data"].find {
               |a| a["labels"]["id"] == "somethingnotfunny"
-            }["status"]["state"] = "firing"
+            }["status"]["state"] = "active"
 
             post "/prometheus/receiver/grouped/alerts/#{token}", params: payload
 

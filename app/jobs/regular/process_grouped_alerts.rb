@@ -49,6 +49,11 @@ module Jobs
       end
     end
 
+    def normalize_status(status)
+      return "firing" if status == "active"
+      status
+    end
+
     def update_open_alerts(receiver, active_alerts, graph_url)
       Topic.open_alerts.each do |topic|
         DistributedMutex.synchronize("prom_alert_receiver_topic_#{topic.id}") do
@@ -63,8 +68,8 @@ module Jobs
                   STALE_DURATION.minute.ago > DateTime.parse(stored_alert["starts_at"])
                 stored_alert["status"] = "stale"
                 updated = true
-              elsif active_alert && stored_alert["status"] != active_alert["status"]["state"]
-                stored_alert["status"] = active_alert["status"]["state"]
+              elsif active_alert && stored_alert["status"] != normalize_status(active_alert["status"]["state"])
+                stored_alert["status"] = normalize_status(active_alert["status"]["state"])
                 stored_alert["description"] = active_alert.dig("annotations", "description")
                 updated = true
               end

@@ -474,6 +474,57 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
             expect(messages).to eq([])
           end
+
+          it "should not get confused by alerts with the same id" do
+            topic2 = Fabricate(:topic, category: category)
+            topic2.custom_fields[custom_field_key] = {
+              'alerts' => [
+                {
+                  'id' => 'somethingfunny',
+                  'starts_at' => "2018-07-24T23:25:31.363742333Z",
+                  'graph_url' => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
+                  'status' => 'firing',
+                  'datacenter' => datacenter
+                }
+              ]
+            }
+            topic2.custom_fields[
+              DiscoursePrometheusAlertReceiver::TOPIC_BASE_TITLE_CUSTOM_FIELD
+            ] = "some title"
+            topic2.save_custom_fields(true)
+
+            PluginStore.set(plugin_name, token,
+              PluginStore.get(plugin_name, token).tap do |data|
+                data["topic_map"]["OtherAlertName"] = topic2.id
+              end
+            )
+
+            # JobDown/somethingfunny should be firing
+            payload["data"].find {
+              |a| a["labels"]["id"] == "somethingfunny"
+            }["status"]["state"] = "active"
+
+            # Create new alert OtherAlertName/somethingfunny, which is silenced
+            payload["data"].append(
+              JSON.parse(payload["data"].find {
+                |a| a["labels"]["id"] == "somethingfunny"
+              }.to_json).tap { |a| a["labels"]["alertname"] = "OtherAlertName"; a["status"]["state"] = "suppressed" }
+            )
+
+            post "/prometheus/receiver/grouped/alerts/#{token}", params: payload
+
+            # First topic should be unaffected
+            expect(
+              topic.reload.custom_fields[custom_field_key]['alerts'].
+                  find { |a| a["id"] == "somethingfunny" }['status']
+            ).to eq('firing')
+
+            # Second topic should be updated
+            expect(
+              topic2.reload.custom_fields[custom_field_key]['alerts'].
+                  find { |a| a["id"] == "somethingfunny" }['status']
+            ).to eq('suppressed')
+          end
         end
 
         describe 'when payload is missing one alert' do

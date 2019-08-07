@@ -57,12 +57,15 @@ module Jobs
     def update_open_alerts(receiver, active_alerts, graph_url)
       Topic.open_alerts.each do |topic|
         DistributedMutex.synchronize("prom_alert_receiver_topic_#{topic.id}") do
+          alertname = receiver["topic_map"].key(topic.id)
+          next unless alertname
+
           stored_alerts = topic.custom_fields.dig(alert_history_key, 'alerts')
           updated = false
 
           stored_alerts&.each do |stored_alert|
             if stored_alert['graph_url'].include?(graph_url) && stored_alert['status'] != 'resolved'
-              active_alert = active_alerts.find { |a| a['labels']['id'] == stored_alert['id'] }
+              active_alert = active_alerts.find { |a| a['labels']['id'] == stored_alert['id'] && a['labels']['alertname'] == alertname }
 
               if !active_alert && stored_alert["status"] != "stale" &&
                   STALE_DURATION.minute.ago > DateTime.parse(stored_alert["starts_at"])

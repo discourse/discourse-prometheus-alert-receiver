@@ -139,12 +139,12 @@ module AlertPostMixin
   end
 
   def revise_topic(topic:, title:, raw:, datacenters:, firing: nil, high_priority: false)
-    post = topic.posts.first
+    post = topic.first_post
     title_changed = topic.title != title
     skip_revision = !title_changed
 
     if post.raw.strip != raw.strip || title_changed || !firing.nil?
-      post = topic.posts.first
+      post = topic.first_post
 
       fields = {
         title: title,

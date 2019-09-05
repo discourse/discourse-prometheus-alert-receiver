@@ -10,6 +10,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
   let(:parsed_response_body) { JSON.parse(response_body) }
   let(:plugin_name) { DiscoursePrometheusAlertReceiver::PLUGIN_NAME }
 
+  before do
+    SiteSetting.assign_allowed_on_groups += "|#{assignee_group.id}"
+  end
+
   let(:custom_field_key) do
     DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD
   end
@@ -1464,6 +1468,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
 
         before do
+          assignee_group.add(bob)
           payload["commonAnnotations"]["topic_assignee"] = "bobtheangryflower"
         end
 
@@ -1490,15 +1495,13 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
 
         describe 'when group_topic_assignee is present in the payload' do
-          let(:group) { Fabricate(:group) }
-
           before do
-            group.users << [Fabricate(:user), Fabricate(:user)]
+            assignee_group.users << [Fabricate(:user), Fabricate(:user)]
             payload["commonAnnotations"].delete("topic_assignee")
           end
 
           it 'should assign the topic correctly' do
-            [group.name, group.id].each do |id_or_name|
+            [assignee_group.name, assignee_group.id].each do |id_or_name|
               payload["commonAnnotations"]["group_topic_assignee"] = id_or_name
 
               expect do
@@ -1506,7 +1509,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               end.to change { Topic.count }.by(1)
 
               expect(response.status).to eq(200)
-              expect(group.users.include?(topic.assigned_to_user)).to eq(true)
+              expect(assignee_group.users.include?(topic.assigned_to_user)).to eq(true)
               topic.destroy!
             end
           end

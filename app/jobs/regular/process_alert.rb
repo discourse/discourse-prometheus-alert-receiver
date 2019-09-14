@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Jobs
-  class ProcessAlert < Jobs::Base
+  class ProcessAlert < ::Jobs::Base
     include AlertPostMixin
 
     def execute(args)

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Jobs
-  class ProcessGroupedAlerts < Jobs::Base
+  class ProcessGroupedAlerts < ::Jobs::Base
     sidekiq_options retry: false
 
     include AlertPostMixin

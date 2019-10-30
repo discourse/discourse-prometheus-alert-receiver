@@ -1421,7 +1421,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           it "should update the first post of the topic" do
             expect do
               post "/prometheus/receiver/#{token}", params: payload
-            end.to change { first_post.revisions.count }.by(1) &
+            end.to change { first_post.reload.raw } &
               change { topic.reload.title }
 
             expect(topic.title).to eq(

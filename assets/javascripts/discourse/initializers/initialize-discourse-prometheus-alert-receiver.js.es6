@@ -1,5 +1,4 @@
 import { withPluginApi } from "discourse/lib/plugin-api";
-import computed from "ember-addons/ember-computed-decorators";
 
 export default {
   name: "discourse-prometheus-alert-receiver",

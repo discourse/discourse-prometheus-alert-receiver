@@ -817,8 +817,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           )
 
           expect(raw).to include(<<~RAW)
-          | [#{datacenter}](#{external_url}) | | |
-          | --- | --- | --- |
+          | [#{datacenter}](#{external_url}) | | | |
+          | --- | --- | --- | --- |
           RAW
 
           expect(raw).to match(/somethingfunny.*date=2020-01-02 time=03:04:05/)
@@ -1171,13 +1171,13 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             raw = topic.posts.first.raw
 
             expect(raw).to include(<<~RAW)
-            | [#{datacenter}](#{external_url}) | |
-            | --- | --- |
+            | [#{datacenter}](#{external_url}) | | |
+            | --- | --- | --- |
             RAW
 
             expect(raw).to include(<<~RAW)
-            | [#{datacenter2}](#{external_url2}) | | |
-            | --- | --- | --- |
+            | [#{datacenter2}](#{external_url2}) | | | |
+            | --- | --- | --- | --- |
             RAW
 
             expect(raw).to match(

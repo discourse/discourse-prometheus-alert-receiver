@@ -65,6 +65,9 @@ module AlertPostMixin
       cells += " --- |"
     end
 
+    headers += " |"
+    cells += " --- |"
+
     "#{headers}\n#{cells}"
   end
 
@@ -74,6 +77,8 @@ module AlertPostMixin
     if description = alert['description']
       item += " #{description} |"
     end
+
+    item += " [:file_folder:](#{logs_link(alert)}) |"
 
     item
   end
@@ -108,6 +113,14 @@ module AlertPostMixin
     url_params['g0.tab'] = ["0"]
     url.query = URI.encode_www_form(url_params)
     url.to_s
+  end
+
+  def logs_link(alert)
+    url = "#{alert['logs_url']}#/discover"
+    begin_t = Time.parse(alert['starts_at'])
+    end_t   = Time.parse(alert['ends_at']) rescue Time.zone.now
+
+    "#{url}?_g=(time:(from:'#{begin_t}',mode:absolute,to:'#{end_t}'))"
   end
 
   def prev_topic_link(topic_id)

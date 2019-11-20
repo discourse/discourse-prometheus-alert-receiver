@@ -68,7 +68,8 @@ module DiscoursePrometheusAlertReceiver
       Jobs.enqueue(:process_grouped_alerts,
         token: @token,
         data: params[:data].to_json,
-        graph_url: params[:graphURL]
+        graph_url: params[:graphURL],
+        logs_url: params[:logsURL]
       )
 
       render json: success_json

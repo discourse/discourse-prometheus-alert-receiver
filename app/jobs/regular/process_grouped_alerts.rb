@@ -12,6 +12,7 @@ module Jobs
       token = args[:token]
       data = JSON.parse(args[:data])
       graph_url = args[:graph_url]
+      logs_url = args[:logs_url]
 
       receiver = PluginStore.get(
         ::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,

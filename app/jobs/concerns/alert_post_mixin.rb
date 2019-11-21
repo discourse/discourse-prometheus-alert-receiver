@@ -120,7 +120,7 @@ module AlertPostMixin
     begin_t = Time.parse(alert['starts_at'])
     end_t   = Time.parse(alert['ends_at']) rescue Time.zone.now
 
-    "#{url}?_g=(time:(from:'#{begin_t}',mode:absolute,to:'#{end_t}'))"
+    "#{url}?_g=(time:(from:'#{begin_t.to_s(:iso8601)}',mode:absolute,to:'#{end_t.to_s(:iso8601)}'))"
   end
 
   def prev_topic_link(topic_id)

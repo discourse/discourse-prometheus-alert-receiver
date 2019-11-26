@@ -27,7 +27,7 @@ module Jobs
         current_alerts = data
       end
 
-      update_open_alerts(receiver, current_alerts, graph_url)
+      update_open_alerts(receiver, current_alerts, graph_url, logs_url)
     end
 
     private
@@ -55,7 +55,7 @@ module Jobs
       status
     end
 
-    def update_open_alerts(receiver, active_alerts, graph_url)
+    def update_open_alerts(receiver, active_alerts, graph_url, logs_url)
       Topic.open_alerts.each do |topic|
         DistributedMutex.synchronize("prom_alert_receiver_topic_#{topic.id}") do
           alertname = receiver["topic_map"].key(topic.id)
@@ -65,6 +65,8 @@ module Jobs
           updated = false
 
           stored_alerts&.each do |stored_alert|
+            stored_alert['logs_url'] ||= logs_url if logs_url.present?
+
             if stored_alert['graph_url'].include?(graph_url) && stored_alert['status'] != 'resolved'
               active_alert = active_alerts.find { |a| a['labels']['id'] == stored_alert['id'] && a['labels']['alertname'] == alertname }
 

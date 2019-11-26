@@ -1,3 +1,26 @@
-[data-plugin="prom-alerts-table"] th a {
-  color: $primary;
+[data-plugin="prom-alerts-table"] {
+  th {
+    &:last-child {
+      display: none;
+    }
+
+    a {
+      color: $primary;
+    }
+  }
+
+  tr {
+    position: relative;
+
+    td:last-child {
+      position: absolute;
+      display: none;
+    }
+
+    &:hover {
+      td:last-child {
+        display: table-cell;
+      }
+    }
+  }
 }

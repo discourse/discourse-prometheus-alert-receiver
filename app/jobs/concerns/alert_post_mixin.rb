@@ -146,7 +146,7 @@ module AlertPostMixin
   end
 
   def get_grafana_dashboard_url(alert, grafana_url)
-    return if grafana_url.blank?
+    return if alert.blank? || grafana_url.blank?
 
     dashboard_path = alert.dig('annotations', 'grafana_dashboard_path')
     return if dashboard_path.blank?

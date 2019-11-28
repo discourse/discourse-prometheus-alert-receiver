@@ -39,7 +39,9 @@ module Jobs
 
         alert_history = update_alert_history(prev_alert_history, params["alerts"],
           datacenter: params["commonLabels"]["datacenter"],
-          external_url: params["externalURL"]
+          external_url: params["externalURL"],
+          logs_url: params["logsURL"],
+          grafana_url: params["grafanaURL"]
         )
 
         raw = first_post_body(
@@ -70,7 +72,9 @@ module Jobs
       else
         alert_history = update_alert_history([], params["alerts"],
           datacenter: params["commonLabels"]["datacenter"],
-          external_url: params["externalURL"]
+          external_url: params["externalURL"],
+          logs_url: params["logsURL"],
+          grafana_url: params["grafanaURL"]
         )
 
         topic = create_new_topic(receiver, params, alert_history)
@@ -193,7 +197,9 @@ module Jobs
 
     def update_alert_history(previous_history, active_alerts,
                              datacenter:,
-                             external_url:)
+                             external_url:,
+                             logs_url:,
+                             grafana_url:)
 
       # Sadly, this is the easiest way to get a deep dup
       JSON.parse(previous_history.to_json).tap do |new_history|
@@ -206,6 +212,7 @@ module Jobs
           end
 
           alert_description = alert.dig('annotations', 'description')
+          grafana_dashboard_url = get_grafana_dashboard_url(alert, grafana_url)
           firing = is_firing?(alert['status'])
 
           if stored_alert.nil? && firing
@@ -218,6 +225,8 @@ module Jobs
               'datacenter' => datacenter,
               'external_url' => external_url
             }
+            stored_alert['logs_url'] = logs_url if logs_url.present?
+            stored_alert['grafana_url'] = grafana_dashboard_url if grafana_dashboard_url.present?
 
             new_history << stored_alert
           elsif stored_alert
@@ -226,6 +235,8 @@ module Jobs
             stored_alert['datacenter'] = datacenter
             stored_alert['external_url'] = external_url
             stored_alert.delete('ends_at') if firing
+            stored_alert['logs_url'] = logs_url if logs_url.present?
+            stored_alert['grafana_url'] = grafana_dashboard_url if grafana_dashboard_url.present?
           end
 
           if alert['status'] == "resolved" && stored_alert && stored_alert['ends_at'].nil?

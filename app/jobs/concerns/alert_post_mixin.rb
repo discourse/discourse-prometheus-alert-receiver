@@ -78,7 +78,13 @@ module AlertPostMixin
       item += " #{description} |"
     end
 
-    item += " [:file_folder:](#{logs_link(alert)}) |"
+    link = logs_link(alert)
+    item += " [:file_folder:](#{link})" if link.present?
+
+    link = grafana_link(alert)
+    item += " [:bar_chart:](#{link})" if link.present?
+
+    item += " |"
 
     item
   end
@@ -116,11 +122,36 @@ module AlertPostMixin
   end
 
   def logs_link(alert)
+    return if alert['logs_url'].blank?
+
     url = "#{alert['logs_url']}#/discover"
     begin_t = Time.parse(alert['starts_at'])
     end_t   = Time.parse(alert['ends_at']) rescue Time.zone.now
 
     "#{url}?_g=(time:(from:'#{begin_t.to_s(:iso8601)}',mode:absolute,to:'#{end_t.to_s(:iso8601)}'))"
+  end
+
+  def grafana_link(alert)
+    return if alert['grafana_url'].blank?
+
+    url = URI(alert['grafana_url'])
+    url_params = CGI.parse(url.query || "")
+
+    begin_t = Time.parse(alert['starts_at'])
+    end_t   = Time.parse(alert['ends_at']) rescue Time.zone.now
+    url_params['from'] = "#{begin_t.to_i}000"
+    url_params['to'] = "#{end_t.to_i}000"
+    url.query = URI.encode_www_form(url_params)
+    url.to_s
+  end
+
+  def get_grafana_dashboard_url(alert, grafana_url)
+    return if grafana_url.blank?
+
+    dashboard_path = alert.dig('annotations', 'grafana_dashboard_path')
+    return if dashboard_path.blank?
+
+    "#{grafana_url}#{dashboard_path}"
   end
 
   def prev_topic_link(topic_id)

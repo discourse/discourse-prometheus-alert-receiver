@@ -884,6 +884,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                 'logs_url' => "http://logs.example.com/app",
+                'grafana_url' => "http://graphs.example.com/d/xyzabcefg",
                 'status' => 'firing',
                 'datacenter' => datacenter
               },
@@ -892,6 +893,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                 'logs_url' => "http://logs.example.com/app",
+                'grafana_url' => "http://graphs.example.com/d/xyzabcefg",
                 'status' => 'firing',
                 'datacenter' => datacenter
               },
@@ -949,6 +951,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'id' => "somethingfunny",
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'ends_at' => "2020-01-02T09:08:07.09876543Z",
+                "grafana_url" => "http://graphs.example.com/d/xyzabcefg",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                 'logs_url' => "http://logs.example.com/app",
                 'status' => 'resolved',
@@ -959,6 +962,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               {
                 'id' => 'somethingnotfunny',
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
+                "grafana_url" => "http://graphs.example.com/d/xyzabcefg",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
                 'logs_url' => "http://logs.example.com/app",
                 'status' => 'firing',
@@ -983,6 +987,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
           expect(raw).to include(
             "[:file_folder:](http://logs.example.com/app#/discover?_g=(time:(from:'2020-01-02T03:04:05Z',mode:absolute,to:'2020-01-02T09:08:07Z')))"
+          )
+
+          expect(raw).to include(
+            "[:bar_chart:](http://graphs.example.com/d/xyzabcefg?from=1577934245000&to=1577956087000"
           )
         end
       end

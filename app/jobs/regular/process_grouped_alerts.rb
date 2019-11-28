@@ -11,8 +11,6 @@ module Jobs
     def execute(args)
       token = args[:token]
       data = JSON.parse(args[:data])
-      graph_url = args[:graph_url]
-      logs_url = args[:logs_url]
 
       receiver = PluginStore.get(
         ::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
@@ -27,7 +25,7 @@ module Jobs
         current_alerts = data
       end
 
-      update_open_alerts(receiver, current_alerts, graph_url, logs_url)
+      update_open_alerts(receiver, current_alerts, args.slice(:graph_url, :logs_url, :grafana_url))
     end
 
     private
@@ -55,7 +53,7 @@ module Jobs
       status
     end
 
-    def update_open_alerts(receiver, active_alerts, graph_url, logs_url)
+    def update_open_alerts(receiver, active_alerts, opts)
       Topic.open_alerts.each do |topic|
         DistributedMutex.synchronize("prom_alert_receiver_topic_#{topic.id}") do
           alertname = receiver["topic_map"].key(topic.id)
@@ -65,10 +63,13 @@ module Jobs
           updated = false
 
           stored_alerts&.each do |stored_alert|
-            stored_alert['logs_url'] ||= logs_url if logs_url.present?
+            stored_alert['logs_url'] ||= opts[:logs_url] if opts[:logs_url].present?
 
-            if stored_alert['graph_url'].include?(graph_url) && stored_alert['status'] != 'resolved'
+            if stored_alert['graph_url'].include?(opts[:graph_url]) && stored_alert['status'] != 'resolved'
               active_alert = active_alerts.find { |a| a['labels']['id'] == stored_alert['id'] && a['labels']['alertname'] == alertname }
+
+              grafana_dashboard_url = get_grafana_dashboard_url(active_alert, opts[:grafana_url])
+              stored_alert['grafana_url'] = grafana_dashboard_url if grafana_dashboard_url.present?
 
               if !active_alert && stored_alert["status"] != "stale" &&
                   STALE_DURATION.minute.ago > DateTime.parse(stored_alert["starts_at"])

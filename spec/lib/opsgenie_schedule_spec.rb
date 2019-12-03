@@ -153,7 +153,7 @@ RSpec.describe OpsgenieSchedule do
   end
 
   after do
-    $redis.del(described_class.send(:redis_key))
+    Discourse.redis.del(described_class.send(:redis_key))
   end
 
   describe '.users_on_rotation' do

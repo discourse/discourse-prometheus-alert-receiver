@@ -25,7 +25,7 @@ class OpsgenieSchedule
   private
 
   def self.user_rotations
-    if cached_rotations = $redis.get(redis_key)
+    if cached_rotations = Discourse.redis.get(redis_key)
       return MessagePack.unpack(cached_rotations)
     end
 
@@ -50,7 +50,7 @@ class OpsgenieSchedule
       end
     end
 
-    $redis.setex(redis_key, 1.day, new_rotations.to_msgpack)
+    Discourse.redis.setex(redis_key, 1.day, new_rotations.to_msgpack)
     new_rotations
   end
 

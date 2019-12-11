@@ -91,17 +91,23 @@ module AlertPostMixin
 
   def alert_time_range(alert)
     if alert['ends_at']
-      "#{local_date(alert['starts_at'])} to #{local_date(alert['ends_at'])}"
+      "#{local_date(alert['starts_at'])} to #{local_date(alert['ends_at'], alert['starts_at'])}"
     else
       "active since #{local_date(alert['starts_at'])}"
     end
   end
 
-  def local_date(time)
+  def local_date(time, starts_at = nil)
     parsed = Time.zone.parse(time)
+    format = "L HH:mm:ss"
+
+    if starts_at.present?
+      from = Time.zone.parse(starts_at)
+      format = "HH:mm:ss" if from.at_beginning_of_day == parsed.at_beginning_of_day
+    end
 
     date = +<<~DATE
-    [date=#{parsed.strftime("%Y-%m-%d")} time=#{parsed.strftime("%H:%M:%S")} format="L HH:mm:ss" displayedTimezone="UTC" timezones="Europe/Paris\\|America/Los_Angeles\\|Asia/Singapore\\|Australia/Sydney"]
+    [date=#{parsed.strftime("%Y-%m-%d")} time=#{parsed.strftime("%H:%M:%S")} format="#{format}" displayedTimezone="UTC" timezones="Europe/Paris\\|America/Los_Angeles\\|Asia/Singapore\\|Australia/Sydney"]
     DATE
 
     date.chomp!

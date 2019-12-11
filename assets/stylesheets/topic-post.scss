@@ -23,4 +23,10 @@
       }
     }
   }
+
+  td:nth-child(2) > .discourse-local-date:nth-child(2) {
+    .d-icon {
+      display: none;
+    }
+  }
 }

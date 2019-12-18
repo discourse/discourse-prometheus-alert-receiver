@@ -709,6 +709,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
       let(:response_sla) { '4hours' }
       let(:external_url) { "supposed.to.be.a.url" }
+      let(:logs_url) { "https://logs.example.com/path" }
 
       let!(:assignee) do
         Fabricate(:user).tap do |u|
@@ -721,6 +722,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           "version" => "4",
           "status" => "firing",
           "externalURL" => external_url,
+          "logsURL" => logs_url,
           "groupKey" => group_key,
           "groupLabels" => {
             "foo" => "bar",
@@ -802,6 +804,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'id' => "somethingfunny",
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
+                'logs_url' => logs_url,
                 'status' => 'firing',
                 'description' => 'some description',
                 'datacenter' => datacenter,
@@ -953,7 +956,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'ends_at' => "2020-01-02T09:08:07.09876543Z",
                 "grafana_url" => "http://graphs.example.com/d/xyzabcefg",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'logs_url' => "http://logs.example.com/app",
+                'logs_url' => logs_url,
                 'status' => 'resolved',
                 'description' => 'some description',
                 'datacenter' => datacenter,
@@ -986,7 +989,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(raw).to match(/somethingfunny.*date=2020-01-02 time=09:08:07/)
 
           expect(raw).to include(
-            "[:file_folder:](http://logs.example.com/app#/discover?_g=(time:(from:'2020-01-02T03:04:05Z',mode:absolute,to:'2020-01-02T09:08:07Z')))"
+            "[:file_folder:](#{logs_url}#/discover?_g=(time:(from:'2020-01-02T03:04:05Z',mode:absolute,to:'2020-01-02T09:08:07Z')))"
           )
 
           expect(raw).to include(
@@ -1064,6 +1067,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'id' => "oldalert",
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
+                'logs_url' => logs_url,
                 'status' => 'firing',
                 'description' => 'some description',
                 'datacenter' => datacenter,
@@ -1073,6 +1077,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'id' => "newalert",
                 'starts_at' => "2020-12-31T23:59:59.75645342Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
+                'logs_url' => logs_url,
                 'status' => 'firing',
                 'description' => 'some description',
                 'datacenter' => datacenter,
@@ -1176,6 +1181,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                   'id' => "oldalert",
                   'starts_at' => "2020-12-31T23:59:59.75645342Z",
                   'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
+                  'logs_url' => logs_url,
                   'status' => 'firing',
                   'description' => 'some description',
                   'datacenter' => datacenter2,
@@ -1256,6 +1262,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'id' => "somethingfunny",
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
+                'logs_url' => logs_url,
                 'status' => 'firing',
                 'description' => 'some description',
                 'datacenter' => datacenter,
@@ -1279,6 +1286,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'id' => "somethingfunny",
                 'starts_at' => "2020-01-02T03:04:05.12345678Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
+                'logs_url' => logs_url,
                 'status' => 'firing',
                 'description' => 'some description',
                 'datacenter' => datacenter,
@@ -1379,6 +1387,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 'id' => "anotheralert",
                 'starts_at' => "2020-12-31T23:59:59.98765Z",
                 'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
+                'logs_url' => logs_url,
                 'status' => 'firing',
                 'description' => 'some description',
                 'datacenter' => datacenter,

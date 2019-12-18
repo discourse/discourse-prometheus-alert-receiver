@@ -54,7 +54,7 @@ module DiscoursePrometheusAlertReceiver
     def receive
       find_receiver_from_token
 
-      log("Alert: #{params.inspect}")
+      log("Alert: #{params.except(:data).inspect}")
 
       Jobs.enqueue(:process_alert,
         token: @token,
@@ -67,7 +67,7 @@ module DiscoursePrometheusAlertReceiver
     def receive_grouped_alerts
       find_receiver_from_token
 
-      log("Grouped Alert: #{params.inspect}")
+      log("Grouped Alert: #{params.except(:data).inspect}")
 
       Jobs.enqueue(:process_grouped_alerts,
         token: @token,

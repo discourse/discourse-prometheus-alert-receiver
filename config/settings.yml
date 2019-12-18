@@ -6,3 +6,4 @@ plugins:
     type: list
     list_type: compact
   prometheus_alert_receiver_enable_assign: true
+  prometheus_alert_receiver_debug_enabled: false

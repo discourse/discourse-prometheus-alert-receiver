@@ -54,6 +54,8 @@ module DiscoursePrometheusAlertReceiver
     def receive
       find_receiver_from_token
 
+      log("Alert: #{params.inspect}")
+
       Jobs.enqueue(:process_alert,
         token: @token,
         params: params.permit!.to_h
@@ -64,6 +66,8 @@ module DiscoursePrometheusAlertReceiver
 
     def receive_grouped_alerts
       find_receiver_from_token
+
+      log("Grouped Alert: #{params.inspect}")
 
       Jobs.enqueue(:process_grouped_alerts,
         token: @token,
@@ -90,6 +94,10 @@ module DiscoursePrometheusAlertReceiver
 
       category = Category.find_by(id: @receiver[:category_id])
       raise Discourse::InvalidParameters unless category
+    end
+
+    def log(info)
+      Rails.logger.warn("Prometheus Alerts Debugging: #{info}") if SiteSetting.prometheus_alert_receiver_debug_enabled
     end
   end
 end

@@ -211,6 +211,10 @@ module Jobs
               p["status"] != "resolved"
           end
 
+          # TODO: find correct way to pass logs & grafana URLs to single alerts
+          logs_url ||= "#{external_url.sub("alerts", "logs")}/app/kibana"
+          grafana_url ||= external_url.sub("alerts", "graphs")
+
           alert_description = alert.dig('annotations', 'description')
           grafana_dashboard_url = get_grafana_dashboard_url(alert, grafana_url)
           firing = is_firing?(alert['status'])

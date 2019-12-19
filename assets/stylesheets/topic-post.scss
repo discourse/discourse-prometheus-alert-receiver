@@ -1,4 +1,8 @@
 [data-plugin="prom-alerts-table"] {
+  table {
+    position: relative;
+  }
+
   th {
     &:last-child {
       display: none;
@@ -13,13 +17,17 @@
     position: relative;
 
     td:last-child {
-      position: absolute;
-      display: none;
-    }
+      width: 20px;
+      max-width: 20px;
+      overflow: hidden;
+      vertical-align: top;
 
-    &:hover {
-      td:last-child {
-        display: table-cell;
+      &:hover {
+        width: auto;
+        max-width: none;
+        position: absolute;
+        right: 0;
+        background-color: $secondary;
       }
     }
   }

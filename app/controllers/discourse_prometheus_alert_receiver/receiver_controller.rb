@@ -54,7 +54,7 @@ module DiscoursePrometheusAlertReceiver
     def receive
       find_receiver_from_token
 
-      log("Alert: #{params.except(:alerts).inspect}")
+      log("Alert: #{params.except(:alerts, :groupLabels, :commonLabels, :commonAnnotations).inspect}")
 
       Jobs.enqueue(:process_alert,
         token: @token,

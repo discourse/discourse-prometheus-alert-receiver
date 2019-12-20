@@ -78,13 +78,15 @@ module AlertPostMixin
       item += " #{description} |"
     end
 
+    actions = []
+
     link = logs_link(alert)
-    item += " [:file_folder:](#{link})" if link.present?
+    actions << "[:file_folder:](#{link})" if link.present?
 
     link = grafana_link(alert)
-    item += " [:bar_chart:](#{link})" if link.present?
+    actions << "[:bar_chart:](#{link})" if link.present?
 
-    item += " |"
+    item += " <div>#{ actions.join(" ") }</div> |" if actions.present?
 
     item
   end

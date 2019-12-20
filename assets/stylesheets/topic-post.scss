@@ -17,17 +17,22 @@
     position: relative;
 
     td:last-child {
+      position: relative;
       width: 20px;
-      max-width: 20px;
-      overflow: hidden;
-      vertical-align: top;
 
-      &:hover {
-        width: auto;
-        max-width: none;
-        position: absolute;
-        right: 0;
+      > div {
         background-color: $secondary;
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 3px;
+        max-width: 20px;
+        height: 20px;
+        overflow: hidden;
+      }
+
+      &:hover > div {
+        max-width: none;
       }
     }
   }

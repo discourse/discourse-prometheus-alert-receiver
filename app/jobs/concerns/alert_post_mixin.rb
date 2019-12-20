@@ -101,11 +101,11 @@ module AlertPostMixin
 
   def local_date(time, starts_at = nil)
     parsed = Time.zone.parse(time)
-    format = "L HH:mm:ss"
+    format = "L HH:mm"
 
     if starts_at.present?
       from = Time.zone.parse(starts_at)
-      format = "HH:mm:ss" if from.at_beginning_of_day == parsed.at_beginning_of_day
+      format = "HH:mm" if from.at_beginning_of_day == parsed.at_beginning_of_day
     end
 
     date = +<<~DATE

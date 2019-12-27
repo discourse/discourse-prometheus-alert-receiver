@@ -30,6 +30,10 @@
         height: 20px;
         overflow: hidden;
         white-space: nowrap;
+
+        .badge-notification.clicks {
+          display: none;
+        }
       }
 
       &:hover > div {

@@ -7,6 +7,7 @@ module AlertPostMixin
   HIGH_PRIORITY_TAG = "high-priority".freeze
   NEXT_BUSINESS_DAY_SLA = "nbd".freeze
   MAX_DISPLAY_GROUP_SIZE = 100
+  FIRING_COLLAPSE_THRESHOLD = 100
   HISTORY_COLLAPSE_THRESHOLD = 50
 
   private
@@ -36,12 +37,12 @@ module AlertPostMixin
 
     if firing_alerts.present?
       output += "## :fire: #{I18n.t("prom_alert_receiver.post.headers.firing")}\n\n"
-      output = generate_alert_items(firing_alerts, output)
+      output = generate_alert_items(firing_alerts, output, collapse: firing_alerts.length > FIRING_COLLAPSE_THRESHOLD)
     end
 
     if silenced_alerts.present?
       output += "\n\n# :shushing_face: Silenced Alerts\n\n"
-      output = generate_alert_items(silenced_alerts, output)
+      output = generate_alert_items(silenced_alerts, output, collapse: silenced_alerts.length > HISTORY_COLLAPSE_THRESHOLD)
     end
 
     {
@@ -256,14 +257,16 @@ module AlertPostMixin
       .group_by { |alert| [alert['datacenter'], alert['external_url']] }
       .each do |(datacenter, external_url), alerts|
 
+      total_count = alerts.length
+
       is_truncated = truncated_count = nil
-      if alerts.length > MAX_DISPLAY_GROUP_SIZE
+      if total_count > MAX_DISPLAY_GROUP_SIZE
         is_truncated = true
         truncated_count = alerts.length - MAX_DISPLAY_GROUP_SIZE
         alerts = alerts.first(MAX_DISPLAY_GROUP_SIZE)
       end
 
-      output += "[details=#{datacenter} (#{alerts.count})]" if collapse
+      output += "[details=#{datacenter} (#{total_count})]\n" if collapse
       output += "#{thead(alerts, datacenter, external_url)}\n"
       output += alerts.first(MAX_DISPLAY_GROUP_SIZE).map { |alert| alert_item(alert) }.join("\n")
       output += "\n|[#{I18n.t("prom_alert_receiver.post.more", count: truncated_count)}](#{external_url})|" if is_truncated

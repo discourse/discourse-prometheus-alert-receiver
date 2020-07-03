@@ -102,12 +102,18 @@ after_initialize do
     scope.user&.include_alert_counts?
   end
 
+  on(:after_extract_linked_users) do |users, post|
+    if post.post_number == 1 && post.user == Discourse.system_user && post.topic.category&.slug == 'alerts' # TODO: don't hardcode the category slug
+      users.clear
+    end
+  end
+
   TopicQuery.add_custom_filter(
     DiscoursePrometheusAlertReceiver::PLUGIN_NAME
   ) do |results, topic_query|
 
     options = topic_query.options
-    category_id = Category.where(slug: 'alerts').pluck(:id).first
+    category_id = Category.where(slug: 'alerts').pluck(:id).first # TODO: don't hardcode the category slug
 
     if options[:category_id] == category_id && options[:status] == 'firing'
       results = results.firing_alerts

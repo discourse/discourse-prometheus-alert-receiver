@@ -169,27 +169,6 @@ module Jobs
     def assign_alert(topic, receiver, assignee: nil)
       return unless SiteSetting.prometheus_alert_receiver_enable_assign
 
-      assignee ||= begin
-        emails = OpsgenieSchedule.users_on_rotation
-
-        possible_users =
-          if emails.length == 0
-            []
-          else
-            users = User.with_email(OpsgenieSchedule.users_on_rotation)
-
-            if group_id = receiver[:assignee_group_id]
-              users = users.joins(:group_users).where(
-                group_users: { group_id: group_id }
-              )
-            end
-
-            users
-          end
-
-        assignee = possible_users.sample || random_group_member(receiver[:assignee_group_id])
-      end
-
       if assignee
         TopicAssigner.new(topic, Discourse.system_user).assign(assignee)
       end

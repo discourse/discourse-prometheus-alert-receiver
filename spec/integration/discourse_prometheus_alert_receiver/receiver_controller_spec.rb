@@ -829,8 +829,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(raw).to match(
             /http:\/\/alerts\.example\.com\/graph\?g0\.expr=lolrus.*g0\.tab=0/
           )
-
-          expect(topic.assigned_to_user.id).to eq(assignee.id)
         end
       end
 
@@ -873,8 +871,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(raw).to match(
             /somethingfunny.*date=2020-01-02 time=03:04:05/
           )
-
-          expect(topic.assigned_to_user.id).to eq(assignee.id)
         end
       end
 
@@ -1295,16 +1291,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             ]
           )
         end
-
-        it 'reassigns the alert if topic has no assignee' do
-          TopicAssigner.new(topic, Discourse.system_user).unassign
-
-          expect do
-            post "/prometheus/receiver/#{token}", params: payload
-          end.to change { topic.reload.assigned_to_user }
-
-          expect(response.status).to eq(200)
-        end
       end
 
       context "firing alert for a groupkey referencing a closed topic" do
@@ -1395,8 +1381,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               },
             ]
           )
-
-          expect(keyed_topic.assigned_to_user.id).to eq(assignee.id)
 
           expect(keyed_topic.posts.first.raw).to match(
             /\[Previous alert\]\(http:\/\/test\.localhost\/t\/#{closed_topic.id}\).*date=2018-07-27 time=19:33:44/

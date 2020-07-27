@@ -15,7 +15,6 @@ after_initialize do
     '../app/jobs/concerns/alert_post_mixin.rb',
     '../app/jobs/regular/process_alert.rb',
     '../app/jobs/regular/process_grouped_alerts.rb',
-    '../lib/opsgenie_schedule.rb'
   ].each { |path| load File.expand_path(path, __FILE__) }
 
   module ::DiscoursePrometheusAlertReceiver

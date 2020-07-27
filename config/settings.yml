@@ -1,6 +1,5 @@
 plugins:
   prometheus_alert_receiver_enabled: true
-  prometheus_alert_receiver_opsgenie_api_key: ''
   prometheus_alert_receiver_custom_nav_group: 
     default: ''
     type: list

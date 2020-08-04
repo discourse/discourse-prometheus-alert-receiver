@@ -9,7 +9,7 @@
     }
 
     a {
-      color: $primary;
+      color: var(--primary, $primary);
     }
   }
 
@@ -37,7 +37,7 @@
       }
 
       &:hover > div {
-        background-color: $secondary;
+        background-color: var(--secondary, $secondary);
         max-width: none;
       }
     }

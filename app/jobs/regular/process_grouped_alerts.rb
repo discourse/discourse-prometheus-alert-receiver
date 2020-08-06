@@ -84,6 +84,7 @@ module Jobs
           end
 
           if updated
+            topic.custom_fields[::DiscoursePrometheusAlertReceiver::ALERT_HISTORY_VERSION_CUSTOM_FIELD] = 2
             topic.save_custom_fields(true)
             klass = DiscoursePrometheusAlertReceiver
 

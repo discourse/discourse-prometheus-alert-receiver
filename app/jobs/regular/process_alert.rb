@@ -84,6 +84,7 @@ module Jobs
       # explicitly declared as JSON fields, so we have to wrap our array in
       # a single-element hash.
       topic.custom_fields[::DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD] = { 'alerts' => alert_history }
+      topic.custom_fields[::DiscoursePrometheusAlertReceiver::ALERT_HISTORY_VERSION_CUSTOM_FIELD] = 2
       topic.save_custom_fields
 
       MessageBus.publish("/alert-receiver",

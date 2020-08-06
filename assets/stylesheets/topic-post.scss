@@ -1,3 +1,15 @@
+#post_1 .contents {
+  display: flex;
+  flex-direction: column;
+
+  * {
+    order: 2;
+  }
+  .cooked {
+    order: 1;
+  }
+}
+
 [data-plugin="prom-alerts-table"],
 .prometheus-alert-receiver {
   table {

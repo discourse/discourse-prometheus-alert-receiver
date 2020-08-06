@@ -1,4 +1,5 @@
 import { withPluginApi } from "discourse/lib/plugin-api";
+import { observes } from "discourse-common/utils/decorators";
 
 export default {
   name: "discourse-prometheus-alert-receiver",
@@ -14,6 +15,28 @@ export default {
 
       messageBus.subscribe("/alert-receiver", payload => {
         site.set("firing_alerts_count", payload.firing_alerts_count);
+      });
+
+      api.decorateWidget("post-contents:after-cooked", dec => {
+        if (dec.attrs.post_number === 1) {
+          const postModel = dec.getModel();
+          if (postModel && postModel.topic.alert_data) {
+            return dec.attach("alert-receiver-data", {
+              alerts: postModel.topic.alert_data
+            });
+          }
+        }
+      });
+
+      api.modifyClass("controller:topic", {
+        @observes("model.alert_data")
+        _alertDataChanged() {
+          if (this.model && this.model.alert_data && this.model.postStream) {
+            this.appEvents.trigger("post-stream:refresh", {
+              id: this.model.postStream.firstPostId
+            });
+          }
+        }
       });
     });
   }

@@ -6,101 +6,8 @@ module AlertPostMixin
   FIRING_TAG = "firing".freeze
   HIGH_PRIORITY_TAG = "high-priority".freeze
   NEXT_BUSINESS_DAY_SLA = "nbd".freeze
-  MAX_DISPLAY_GROUP_SIZE = 100
-  FIRING_COLLAPSE_THRESHOLD = 100
-  HISTORY_COLLAPSE_THRESHOLD = 50
 
   private
-
-  def render_alerts(alert_history)
-    firing_alerts = []
-    resolved_alerts = []
-    silenced_alerts = []
-    stale_alerts = []
-
-    alert_history.each do |alert|
-      status = alert['status']
-
-      case
-      when is_firing?(status)
-        firing_alerts << alert
-      when status == 'resolved'
-        resolved_alerts << alert
-      when status == 'stale'
-        stale_alerts << alert
-      when is_suppressed?(status)
-        silenced_alerts << alert
-      end
-    end
-
-    output = ""
-
-    if firing_alerts.present?
-      output += "## :fire: #{I18n.t("prom_alert_receiver.post.headers.firing")}\n\n"
-      output = generate_alert_items(firing_alerts, output, collapse: firing_alerts.length > FIRING_COLLAPSE_THRESHOLD)
-    end
-
-    if silenced_alerts.present?
-      output += "\n\n# :shushing_face: Silenced Alerts\n\n"
-      output = generate_alert_items(silenced_alerts, output, collapse: silenced_alerts.length > HISTORY_COLLAPSE_THRESHOLD)
-    end
-
-    {
-      "history" => resolved_alerts,
-      "stale" => stale_alerts
-    }.each do |header, alerts|
-      if alerts.present?
-        header = I18n.t("prom_alert_receiver.post.headers.#{header}")
-        output += "\n\n## #{header}\n\n"
-        output = generate_alert_items(alerts, output, collapse: alerts.length > HISTORY_COLLAPSE_THRESHOLD)
-      end
-    end
-
-    output
-  end
-
-  def thead(alerts, datacenter, external_link)
-    headers = "| [#{datacenter}](#{external_link}) | |"
-    cells = "| --- | --- |"
-
-    if alerts.any? { |alert| alert['description'] }
-      headers += " |"
-      cells += " --- |"
-    end
-
-    headers += " |"
-    cells += " --- |"
-
-    "#{headers}\n#{cells}"
-  end
-
-  def alert_item(alert)
-    item = "| [#{alert['id']}](#{alert_link(alert)}) | #{alert_time_range(alert)} |"
-
-    if description = alert['description']
-      item += " #{description} |"
-    end
-
-    actions = []
-
-    link = logs_link(alert)
-    actions << "[:file_folder:](#{link})" if link.present?
-
-    link = grafana_link(alert)
-    actions << "[:bar_chart:](#{link})" if link.present?
-
-    item += " <div>#{ actions.join(" ") }</div> |" if actions.present?
-
-    item
-  end
-
-  def alert_time_range(alert)
-    if alert['ends_at']
-      "#{local_date(alert['starts_at'])} to #{local_date(alert['ends_at'], alert['starts_at'])}"
-    else
-      "active since #{local_date(alert['starts_at'])}"
-    end
-  end
 
   def local_date(time, starts_at = nil)
     parsed = Time.zone.parse(time)
@@ -117,43 +24,6 @@ module AlertPostMixin
 
     date.chomp!
     date
-  end
-
-  def alert_link(alert)
-    url = URI(alert['graph_url'])
-    url_params = CGI.parse(url.query)
-
-    begin_t = Time.parse(alert['starts_at'])
-    end_t   = Time.parse(alert['ends_at']) rescue Time.zone.now
-    url_params['g0.range_input'] = "#{(end_t - begin_t).to_i + 600}s"
-    url_params['g0.end_input']   = "#{(end_t + 300).strftime("%Y-%m-%d %H:%M")}"
-    url_params['g0.tab'] = ["0"]
-    url.query = URI.encode_www_form(url_params)
-    url.to_s
-  end
-
-  def logs_link(alert)
-    return if alert['logs_url'].blank?
-
-    url = "#{alert['logs_url']}#/discover"
-    begin_t = Time.parse(alert['starts_at'])
-    end_t   = Time.parse(alert['ends_at']) rescue Time.zone.now
-
-    "#{url}?_g=(time:(from:'#{begin_t.to_s(:iso8601)}',mode:absolute,to:'#{end_t.to_s(:iso8601)}'))"
-  end
-
-  def grafana_link(alert)
-    return if alert['grafana_url'].blank?
-
-    url = URI(alert['grafana_url'])
-    url_params = CGI.parse(url.query || "")
-
-    begin_t = Time.parse(alert['starts_at'])
-    end_t   = Time.parse(alert['ends_at']) rescue Time.zone.now
-    url_params['from'] = "#{begin_t.to_i}000"
-    url_params['to'] = "#{end_t.to_i}000"
-    url.query = URI.encode_www_form(url_params)
-    url.to_s
   end
 
   def get_grafana_dashboard_url(alert, grafana_url)
@@ -190,7 +60,8 @@ module AlertPostMixin
     output = ""
     output += "#{topic_body}\n\n"
     output += "#{prev_topic_link(prev_topic_id)}\n\n" if prev_topic_id
-    output += "#{render_alerts(alert_history)}\n"
+
+    output
   end
 
   def revise_topic(topic:, title:, raw:, datacenters:, firing: nil, high_priority: false)
@@ -236,10 +107,6 @@ module AlertPostMixin
     end
   end
 
-  def is_suppressed?(status)
-    "suppressed".freeze == status
-  end
-
   def is_firing?(status)
     status == "firing".freeze
   end
@@ -248,33 +115,5 @@ module AlertPostMixin
     alerts.each_with_object(Set.new) do |alert, set|
       set << alert['datacenter'] if alert['datacenter']
     end.to_a
-  end
-
-  def generate_alert_items(grouped_alerts, output, collapse: false)
-    output += "<div data-plugin='prom-alerts-table'>\n\n"
-
-    grouped_alerts
-      .group_by { |alert| [alert['datacenter'], alert['external_url']] }
-      .each do |(datacenter, external_url), alerts|
-
-      total_count = alerts.length
-
-      is_truncated = truncated_count = nil
-      if total_count > MAX_DISPLAY_GROUP_SIZE
-        is_truncated = true
-        truncated_count = alerts.length - MAX_DISPLAY_GROUP_SIZE
-        alerts = alerts.first(MAX_DISPLAY_GROUP_SIZE)
-      end
-
-      output += "[details=#{datacenter} (#{total_count})]\n" if collapse
-      output += "#{thead(alerts, datacenter, external_url)}\n"
-      output += alerts.first(MAX_DISPLAY_GROUP_SIZE).map { |alert| alert_item(alert) }.join("\n")
-      output += "\n|[#{I18n.t("prom_alert_receiver.post.more", count: truncated_count)}](#{external_url})|" if is_truncated
-      output += "\n[/details]" if collapse
-      output += "\n\n"
-    end
-
-    output += "</div>"
-    output
   end
 end

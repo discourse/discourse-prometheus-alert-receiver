@@ -1,4 +1,5 @@
-[data-plugin="prom-alerts-table"] {
+[data-plugin="prom-alerts-table"],
+.prometheus-alert-receiver {
   table {
     position: relative;
   }
@@ -43,7 +44,7 @@
     }
   }
 
-  td:nth-child(2) > .discourse-local-date:nth-child(2) {
+  td:nth-child(2) .alert-receiver-date:nth-child(2) {
     .d-icon {
       display: none;
     }

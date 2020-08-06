@@ -5,14 +5,6 @@ en:
     prometheus_alert_receiver_enable_assign: "Enable the assignment of new alert topics based on the topic_assignee and group_topic_assignee annotations"
     prometheus_alert_receiver_debug_enabled: "Enable debugging for prometheus alert receiver"
   prom_alert_receiver:
-    post:
-      headers:
-        firing: "Firing Alerts"
-        history: "Alert History"
-        stale: "Stale Alerts"
-      more: 
-        one: +%{count} more
-        other: +%{count} more
     topic_title: 
       not_firing: "%{base_title}"
       firing: "%{base_title} (%{count} firing)"

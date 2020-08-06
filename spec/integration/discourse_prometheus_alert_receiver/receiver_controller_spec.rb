@@ -297,27 +297,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               datacenter2
             )
 
-            raw = first_post.reload.raw
-
-            [
-              "# :shushing_face: Silenced Alerts",
-              "## #{I18n.t('prom_alert_receiver.post.headers.stale')}",
-            ].each do |content|
-              expect(raw).to include(content)
-            end
-
-            expect(raw).to match(
-              /somethingfunny.*date=2018-07-24 time=23:25:31/
-            )
-
-            expect(raw).to match(
-              /somethingnotfunny.*date=2018-07-24 time=23:25:31/
-            )
-
-            expect(raw).to match(
-              /doesnotexists.*date=2018-07-24 time=23:25:31/
-            )
-
             expect(
               topic.custom_fields[custom_field_key]['alerts'].first['description']
             ).to eq('some description')
@@ -421,27 +400,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             expect(topic.tags.pluck(:name)).to contain_exactly(
               datacenter,
               datacenter2
-            )
-
-            raw = first_post.reload.raw
-
-            [
-              "# :shushing_face: Silenced Alerts",
-              "## #{I18n.t('prom_alert_receiver.post.headers.stale')}",
-            ].each do |content|
-              expect(raw).to include(content)
-            end
-
-            expect(raw).to match(
-              /somethingfunny.*date=2018-07-24 time=23:25:31/
-            )
-
-            expect(raw).to match(
-              /somethingnotfunny.*date=2018-07-24 time=23:25:31/
-            )
-
-            expect(raw).to match(
-              /doesnotexists.*date=2018-07-24 time=23:25:31/
             )
 
             expect(
@@ -635,23 +593,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               datacenter2,
               "firing"
             )
-
-            raw = first_post.reload.raw
-
-            expect(raw).to_not include("# :shushing_face: Silenced Alerts")
-            expect(raw).to include("## #{I18n.t('prom_alert_receiver.post.headers.stale')}")
-
-            expect(raw).to match(
-              /somethingfunny.*date=2018-07-24 time=23:25:31/
-            )
-
-            expect(raw).to match(
-              /somethingnotfunny.*date=2018-07-24 time=23:25:31/
-            )
-
-            expect(raw).to match(
-              /doesnotexists.*date=2018-07-24 time=23:25:31/
-            )
           end
 
           it 'should not update the topic if nothing has changed' do
@@ -818,17 +759,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(raw).to include(
             "Test topic\.\.\. test topic\.\.\. whoop whoop"
           )
-
-          expect(raw).to include(<<~RAW)
-          | [#{datacenter}](#{external_url}) | | | |
-          | --- | --- | --- | --- |
-          RAW
-
-          expect(raw).to match(/somethingfunny.*date=2020-01-02 time=03:04:05/)
-
-          expect(raw).to match(
-            /http:\/\/alerts\.example\.com\/graph\?g0\.expr=lolrus.*g0\.tab=0/
-          )
         end
       end
 
@@ -858,18 +788,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             datacenter,
             AlertPostMixin::FIRING_TAG,
             AlertPostMixin::HIGH_PRIORITY_TAG
-          )
-
-          raw = topic.posts.first.raw
-
-          expect(raw).to include(
-            "## :fire: #{I18n.t('prom_alert_receiver.post.headers.firing')}"
-          )
-
-          expect(raw).to include("some description")
-
-          expect(raw).to match(
-            /somethingfunny.*date=2020-01-02 time=03:04:05/
           )
         end
       end
@@ -969,28 +887,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               }
             ]
           )
-
-          raw = topic.posts.first.raw
-
-          expect(raw).to include(
-            "## :fire: #{I18n.t("prom_alert_receiver.post.headers.firing")}"
-          )
-
-          expect(raw).to match(/somethingnotfunny.*date=2020-01-02 time=03:04:05/)
-
-          expect(raw).to include(
-            "## #{I18n.t("prom_alert_receiver.post.headers.history")}"
-          )
-
-          expect(raw).to match(/somethingfunny.*date=2020-01-02 time=09:08:07/)
-
-          expect(raw).to include(
-            "[:file_folder:](#{logs_url}#/discover?_g=(time:(from:'2020-01-02T03:04:05Z',mode:absolute,to:'2020-01-02T09:08:07Z')))"
-          )
-
-          expect(raw).to include(
-            "[:bar_chart:](http://graphs.example.com/d/xyzabcefg?from=1577934245000&to=1577956087000"
-          )
         end
       end
 
@@ -1081,11 +977,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               },
             ]
           )
-
-          raw = topic.posts.first.raw
-
-          expect(raw).to match(/oldalert.*date=2020-01-02 time=03:04:05/)
-          expect(raw).to match(/newalert.*date=2020-12-31 time=23:59:59/)
         end
 
         it "bumps the existing topic correctly" do
@@ -1186,25 +1077,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               ]
             )
 
-            raw = topic.posts.first.raw
-
-            expect(raw).to include(<<~RAW)
-            | [#{datacenter}](#{external_url}) | | |
-            | --- | --- | --- |
-            RAW
-
-            expect(raw).to include(<<~RAW)
-            | [#{datacenter2}](#{external_url2}) | | | |
-            | --- | --- | --- | --- |
-            RAW
-
-            expect(raw).to match(
-              /oldalert.*date=2020-01-02 time=03:04:05/
-            )
-
-            expect(raw).to match(
-              /oldalert.*date=2020-12-31 time=23:59:59/
-            )
           end
         end
       end
@@ -1439,16 +1311,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
             expect(topic.tags.pluck(:name)).to contain_exactly(
               datacenter, AlertPostMixin::HIGH_PRIORITY_TAG
-            )
-
-            raw = first_post.reload.raw
-
-            expect(raw).to include(
-              "## #{I18n.t('prom_alert_receiver.post.headers.history')}"
-            )
-
-            expect(raw).to match(
-              /somethingfunny.*date=2020-01-02 time=03:04:05.*date=2020-01-02 time=09:08:07/
             )
           end
         end

@@ -20,7 +20,8 @@ after_initialize do
   module ::DiscoursePrometheusAlertReceiver
     PLUGIN_NAME = 'discourse-prometheus-alert-receiver'.freeze
 
-    ALERT_HISTORY_CUSTOM_FIELD  = 'prom_alert_history'.freeze
+    ALERT_HISTORY_CUSTOM_FIELD = 'prom_alert_history'.freeze
+    ALERT_HISTORY_VERSION_CUSTOM_FIELD = 'prom_alert_history_version'.freeze
     PREVIOUS_TOPIC_CUSTOM_FIELD = 'prom_previous_topic'.freeze
     TOPIC_BODY_CUSTOM_FIELD = 'prom_alert_topic_body'.freeze
     TOPIC_BASE_TITLE_CUSTOM_FIELD = 'prom_alert_topic_base_title'.freeze
@@ -45,6 +46,7 @@ after_initialize do
   end
 
   register_topic_custom_field_type(DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD, :json)
+  register_topic_custom_field_type(DiscoursePrometheusAlertReceiver::ALERT_HISTORY_VERSION_CUSTOM_FIELD, :integer)
   register_topic_custom_field_type(DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD, :integer)
 
   self.add_model_callback('Category', :after_destroy) do
@@ -99,6 +101,14 @@ after_initialize do
 
   add_to_serializer(:site, :include_firing_alerts_count?) do
     scope.user&.include_alert_counts?
+  end
+
+  add_to_serializer(:topic_view, :alert_data) do
+    object.topic.custom_fields[DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD]&.[]("alerts")
+  end
+
+  add_to_serializer(:topic_view, :include_alert_data?) do
+    alert_data.present? && object.topic.custom_fields[DiscoursePrometheusAlertReceiver::ALERT_HISTORY_VERSION_CUSTOM_FIELD] == 2
   end
 
   on(:after_extract_linked_users) do |users, post|

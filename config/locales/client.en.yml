@@ -1,5 +1,11 @@
 en:
   js:
+    prom_alert_receiver:
+      headers:
+        firing: "Firing Alerts"
+        resolved: "Alert History"
+        stale: "Stale Alerts"
+        suppressed: "Silenced Alerts"
     filters:
       alerts-category:
         title_with_count:

@@ -74,7 +74,8 @@ module DiscoursePrometheusAlertReceiver
         data: params[:data].to_json,
         graph_url: params[:graphURL],
         logs_url: params[:logsURL],
-        grafana_url: params[:grafanaURL]
+        grafana_url: params[:grafanaURL],
+        external_url: params[:externalURL]
       )
 
       render json: success_json

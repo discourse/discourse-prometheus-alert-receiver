@@ -2,6 +2,8 @@
 
 module Jobs
   class ProcessAlert < ::Jobs::Base
+    sidekiq_options retry: false
+
     include AlertPostMixin
 
     def execute(args)
@@ -9,13 +11,12 @@ module Jobs
       params = args[:params]
 
       DistributedMutex.synchronize("prom-alert-#{@token}") do
-
         receiver = PluginStore.get(
           ::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
           @token
         )
 
-        assigned_topic(receiver, params)
+        process_alerts(receiver, params)
       end
     end
 
@@ -25,95 +26,67 @@ module Jobs
       params["commonLabels"]["alertname"]
     end
 
-    def assigned_topic(receiver, params)
+    def process_alerts(receiver, params)
+      new_alerts = parse_alerts(
+        params['alerts'],
+        # TODO: find correct way to pass logs & grafana URLs to single alerts
+        logs_url: "#{params["externalURL"].sub("alerts", "logs")}/app/kibana",
+        grafana_url: params["externalURL"].sub("alerts", "graphs"),
+        external_url: params["externalURL"]
+      )
+
       topic = Topic.find_by(
         id: receiver[:topic_map][group_key(params)],
         closed: false
       )
 
       if topic
-        prev_alert_history = begin
-          key = ::DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD
-          topic.custom_fields[key]&.dig('alerts') || []
-        end
+        new_alerts.each { |a| a[:topic_id] = topic.id }
+        topic_ids = AlertReceiverAlert.update_alerts(new_alerts)
+        return if topic_ids.empty? # No changes were made
 
-        alert_history = update_alert_history(prev_alert_history, params["alerts"],
-          datacenter: params["commonLabels"]["datacenter"],
-          external_url: params["externalURL"],
-          logs_url: params["logsURL"],
-          grafana_url: params["grafanaURL"]
-        )
+        topic.custom_fields[TOPIC_BODY] = params["commonAnnotations"]["topic_body"]
+        topic.custom_fields[BASE_TITLE] = title_from_params(params)
+        topic.save_custom_fields if !topic.custom_fields_clean?
 
-        raw = first_post_body(
-          receiver: receiver,
-          topic_body: params["commonAnnotations"]["topic_body"],
-          alert_history: alert_history,
-          prev_topic_id: topic.custom_fields[::DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD]
-        )
-
-        base_title = params["commonAnnotations"]["topic_title"] ||
-          "#{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}"
-
-        title = generate_title(base_title, alert_history)
-
-        revise_topic(
-          topic: topic,
-          title: title,
-          raw: raw,
-          datacenters: datacenters(alert_history),
-          firing: alert_history.any? { |alert| is_firing?(alert["status"]) },
-          high_priority: params["commonLabels"]["response_sla"] != AlertPostMixin::NEXT_BUSINESS_DAY_SLA
-        )
-
-        assign_alert(topic, receiver) unless topic.assigned_to_user
+        revise_topic(topic: topic, high_priority: high_priority?(params))
       elsif params["status"] == "resolved"
         # We don't care about resolved alerts if we've closed the topic
         return
       else
-        alert_history = update_alert_history([], params["alerts"],
-          datacenter: params["commonLabels"]["datacenter"],
-          external_url: params["externalURL"],
-          logs_url: params["logsURL"],
-          grafana_url: params["grafanaURL"]
-        )
-
-        topic = create_new_topic(receiver, params, alert_history)
+        topic = create_new_topic(receiver, params, new_alerts)
+        new_alerts.each { |a| a[:topic_id] = topic.id }
+        AlertReceiverAlert.update_alerts(new_alerts)
       end
 
-      # Custom fields don't handle array data very well, even when they're
-      # explicitly declared as JSON fields, so we have to wrap our array in
-      # a single-element hash.
-      topic.custom_fields[::DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD] = { 'alerts' => alert_history }
-      topic.custom_fields[::DiscoursePrometheusAlertReceiver::ALERT_HISTORY_VERSION_CUSTOM_FIELD] = 2
-      topic.save_custom_fields
-
-      MessageBus.publish("/alert-receiver",
-        firing_alerts_count: Topic.firing_alerts.count
-      )
+      publish_alert_counts
     end
 
-    def create_new_topic(receiver, params, alert_history)
-      base_title = params["commonAnnotations"]["topic_title"] ||
+    def title_from_params(params)
+      params["commonAnnotations"]["topic_title"] ||
         "#{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}"
+    end
 
-      topic_title = generate_title(base_title, alert_history)
+    def high_priority?(params)
+      params["commonLabels"]["response_sla"] != NEXT_BUSINESS_DAY_SLA
+    end
+
+    def create_new_topic(receiver, params, new_alerts)
+      base_title = title_from_params(params)
+
+      firing_count = new_alerts.filter { |a| a[:status] == 'firing' }.count
+      topic_title = generate_title(base_title, firing_count)
 
       datacenter = params["commonLabels"]["datacenter"]
       topic_body = params["commonAnnotations"]["topic_body"]
 
       tags = [datacenter]
-
-      tags << AlertPostMixin::FIRING_TAG.dup if is_firing?(params['status'])
-
-      if params["commonLabels"]["response_sla"] != AlertPostMixin::NEXT_BUSINESS_DAY_SLA
-        tags << AlertPostMixin::HIGH_PRIORITY_TAG.dup
-      end
+      tags << FIRING_TAG.dup if firing_count > 0
+      tags << HIGH_PRIORITY_TAG.dup if high_priority?(params)
 
       PostCreator.create!(Discourse.system_user,
         raw: first_post_body(
-          receiver: receiver,
           topic_body: topic_body,
-          alert_history: alert_history,
           prev_topic_id: receiver["topic_map"][group_key(params)]
         ),
         category: Category.where(id: receiver[:category_id]).pluck(:id).first,
@@ -121,22 +94,10 @@ module Jobs
         tags: tags,
         skip_validations: true
       ).topic.tap do |t|
-        t.custom_fields[
-          DiscoursePrometheusAlertReceiver::TOPIC_BODY_CUSTOM_FIELD
-        ] = topic_body
-
-        t.custom_fields[
-          DiscoursePrometheusAlertReceiver::TOPIC_BASE_TITLE_CUSTOM_FIELD
-        ] = base_title
-
-        t.custom_fields[
-          DiscoursePrometheusAlertReceiver::TOPIC_TITLE_CUSTOM_FIELD
-        ] = topic_title
-
-        if receiver["topic_map"][group_key(params)]
-          t.custom_fields[
-            DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD
-          ] = receiver["topic_map"][group_key(params)]
+        t.custom_fields[TOPIC_BODY] = topic_body
+        t.custom_fields[BASE_TITLE] = base_title
+        if prev_topic_id = receiver["topic_map"][group_key(params)]
+          t.custom_fields[PREVIOUS_TOPIC] = prev_topic_id
         end
 
         receiver[:topic_map][group_key(params)] = t.id
@@ -172,61 +133,6 @@ module Jobs
 
       if assignee
         TopicAssigner.new(topic, Discourse.system_user).assign(assignee)
-      end
-    end
-
-    def update_alert_history(previous_history, active_alerts,
-                             datacenter:,
-                             external_url:,
-                             logs_url:,
-                             grafana_url:)
-
-      # Sadly, this is the easiest way to get a deep dup
-      JSON.parse(previous_history.to_json).tap do |new_history|
-        active_alerts.sort_by { |a| a['startsAt'] }.each do |alert|
-
-          stored_alert = new_history.find do |p|
-            p['id'] == alert['labels']['id'] &&
-              p['datacenter'] == datacenter &&
-              p["status"] != "resolved"
-          end
-
-          # TODO: find correct way to pass logs & grafana URLs to single alerts
-          logs_url ||= "#{external_url.sub("alerts", "logs")}/app/kibana"
-          grafana_url ||= external_url.sub("alerts", "graphs")
-
-          alert_description = alert.dig('annotations', 'description')
-          grafana_dashboard_url = get_grafana_dashboard_url(alert, grafana_url)
-          firing = is_firing?(alert['status'])
-
-          if stored_alert.nil? && firing
-            stored_alert = {
-              'id' => alert['labels']['id'],
-              'starts_at' => alert['startsAt'],
-              'graph_url' => alert['generatorURL'],
-              'status' => alert['status'],
-              'description' => alert_description,
-              'datacenter' => datacenter,
-              'external_url' => external_url
-            }
-            stored_alert['logs_url'] = logs_url if logs_url.present?
-            stored_alert['grafana_url'] = grafana_dashboard_url if grafana_dashboard_url.present?
-
-            new_history << stored_alert
-          elsif stored_alert
-            stored_alert['status'] = alert['status']
-            stored_alert['description'] = alert_description
-            stored_alert['datacenter'] = datacenter
-            stored_alert['external_url'] = external_url
-            stored_alert.delete('ends_at') if firing
-            stored_alert['logs_url'] = logs_url if logs_url.present?
-            stored_alert['grafana_url'] = grafana_dashboard_url if grafana_dashboard_url.present?
-          end
-
-          if alert['status'] == "resolved" && stored_alert && stored_alert['ends_at'].nil?
-            stored_alert['ends_at'] = alert['endsAt']
-          end
-        end
       end
     end
   end

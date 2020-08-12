@@ -10,28 +10,27 @@ enabled_site_setting :prometheus_alert_receiver_enabled
 register_asset "stylesheets/topic-post.scss"
 
 after_initialize do
-  [
-    '../app/controllers/discourse_prometheus_alert_receiver/receiver_controller.rb',
-    '../app/jobs/concerns/alert_post_mixin.rb',
-    '../app/jobs/regular/process_alert.rb',
-    '../app/jobs/regular/process_grouped_alerts.rb',
-  ].each { |path| load File.expand_path(path, __FILE__) }
-
   module ::DiscoursePrometheusAlertReceiver
     PLUGIN_NAME = 'discourse-prometheus-alert-receiver'.freeze
 
-    ALERT_HISTORY_CUSTOM_FIELD = 'prom_alert_history'.freeze
-    ALERT_HISTORY_VERSION_CUSTOM_FIELD = 'prom_alert_history_version'.freeze
     PREVIOUS_TOPIC_CUSTOM_FIELD = 'prom_previous_topic'.freeze
     TOPIC_BODY_CUSTOM_FIELD = 'prom_alert_topic_body'.freeze
     TOPIC_BASE_TITLE_CUSTOM_FIELD = 'prom_alert_topic_base_title'.freeze
-    TOPIC_TITLE_CUSTOM_FIELD = 'prom_alert_topic_title'.freeze
 
     class Engine < ::Rails::Engine
       engine_name PLUGIN_NAME
       isolate_namespace ::DiscoursePrometheusAlertReceiver
     end
   end
+
+  [
+    '../app/controllers/discourse_prometheus_alert_receiver/receiver_controller.rb',
+    '../app/models/alert_receiver_alert.rb',
+    '../app/serializers/alert_receiver_alert.rb',
+    '../app/jobs/concerns/alert_post_mixin.rb',
+    '../app/jobs/regular/process_alert.rb',
+    '../app/jobs/regular/process_grouped_alerts.rb',
+  ].each { |path| load File.expand_path(path, __FILE__) }
 
   unless Rails.env.test?
     %i{
@@ -45,9 +44,9 @@ after_initialize do
     end
   end
 
-  register_topic_custom_field_type(DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD, :json)
-  register_topic_custom_field_type(DiscoursePrometheusAlertReceiver::ALERT_HISTORY_VERSION_CUSTOM_FIELD, :integer)
   register_topic_custom_field_type(DiscoursePrometheusAlertReceiver::PREVIOUS_TOPIC_CUSTOM_FIELD, :integer)
+  register_topic_custom_field_type(DiscoursePrometheusAlertReceiver::TOPIC_BODY_CUSTOM_FIELD, :string)
+  register_topic_custom_field_type(DiscoursePrometheusAlertReceiver::TOPIC_BASE_TITLE_CUSTOM_FIELD, :string)
 
   self.add_model_callback('Category', :after_destroy) do
     PluginStoreRow
@@ -63,21 +62,19 @@ after_initialize do
       .destroy_all
   end
 
-  add_class_method(:topic, :open_alerts) do
-    joins(:_custom_fields)
-      .where("topic_custom_fields.name = ?",
-        DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD
-      )
-      .where("not closed")
+  reloadable_patch do
+    Topic.has_many :alert_receiver_alerts, dependent: :delete_all
+  end
 
+  add_class_method(:topic, :open_alerts) do
+    joins(:alert_receiver_alerts)
+      .where("not closed")
   end
 
   add_class_method(:topic, :firing_alerts) do
-    joins(:_custom_fields)
-      .where("
-        topic_custom_fields.value LIKE '%\"status\":\"firing\"%'
-        AND topic_custom_fields.name = ?
-      ", DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD)
+    joins(:alert_receiver_alerts)
+      .where("alert_receiver_alerts.status": 'firing')
+      .where("not closed")
   end
 
   add_to_class(:user, :include_alert_counts?) do
@@ -104,11 +101,11 @@ after_initialize do
   end
 
   add_to_serializer(:topic_view, :alert_data) do
-    object.topic.custom_fields[DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD]&.[]("alerts")
+    ActiveModel::ArraySerializer.new(object.topic.alert_receiver_alerts)
   end
 
   add_to_serializer(:topic_view, :include_alert_data?) do
-    alert_data.present? && object.topic.custom_fields[DiscoursePrometheusAlertReceiver::ALERT_HISTORY_VERSION_CUSTOM_FIELD] == 2
+    alert_data.present?
   end
 
   on(:after_extract_linked_users) do |users, post|

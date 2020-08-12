@@ -14,10 +14,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
     SiteSetting.assign_allowed_on_groups += "|#{assignee_group.id}"
   end
 
-  let(:custom_field_key) do
-    DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD
-  end
-
   describe "#generate_receiver_url" do
     let(:receiver_url) { parsed_response_body['url'] }
     let(:receiver_token) { parsed_response_body['url'].split('/').last }
@@ -152,31 +148,32 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
       describe 'for an active alert' do
         before do
-          topic.custom_fields[custom_field_key] = {
-            'alerts' => [
-              {
-                'id' => 'somethingfunny',
-                'starts_at' => "2018-07-24T23:25:31.363742333Z",
-                'graph_url' => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
-                'status' => 'firing',
-                'datacenter' => datacenter
-              },
-              {
-                'id' => 'somethingnotfunny',
-                'starts_at' => "2018-07-24T23:25:31.363742333Z",
-                'graph_url' => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
-                'status' => 'firing',
-                'datacenter' => datacenter
-              },
-              {
-                'id' => 'doesnotexists',
-                'starts_at' => "2018-07-24T23:25:31.363742333Z",
-                'graph_url' => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
-                'status' => 'firing',
-                'datacenter' => datacenter2
-              }
-            ]
-          }
+          [
+            {
+              identifier: 'somethingfunny',
+              starts_at: "2018-07-24T23:25:31.363742333Z",
+              graph_url: "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
+              status: 'firing',
+              datacenter: datacenter,
+              external_url: 'http://alerts.example.com'
+            },
+            {
+              identifier: 'somethingnotfunny',
+              starts_at: "2018-07-24T23:25:31.363742333Z",
+              graph_url: "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
+              status: 'firing',
+              datacenter: datacenter,
+              external_url: 'http://alerts.example.com'
+            },
+            {
+              identifier: 'doesnotexists',
+              starts_at: "2018-07-24T23:25:31.363742333Z",
+              graph_url: "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
+              status: 'firing',
+              datacenter: datacenter,
+              external_url: 'http://alerts.example.com'
+            }
+          ].each { |a| topic.alert_receiver_alerts.create!(**a) }
 
           topic.custom_fields[
             DiscoursePrometheusAlertReceiver::TOPIC_BASE_TITLE_CUSTOM_FIELD
@@ -185,139 +182,11 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           topic.save_custom_fields(true)
         end
 
-        describe 'when payload includes silenced alerts' do
-          let(:payload) do
-            {
-              "status" => "success",
-              "externalURL" => "supposed.to.be.a.url",
-              "graphURL" => "to.be.a.url",
-              "data" => [
-                {
-                  "labels" => {
-                    "alertname" => alert_name,
-                    "datacenter" => datacenter
-                  },
-                  "groupKey" => group_key,
-                  "blocks" => [
-                    {
-                      "routeOpts" => {
-                        "receiver" => "somereceiver",
-                        "groupBy" => [
-                          "alertname",
-                          "datacenter"
-                        ],
-                        "groupWait" => 30000000000,
-                        "groupInterval" => 30000000000,
-                        "repeatInterval" => 3600000000000
-                      },
-                      "alerts" => [
-                        {
-                          "labels" => {
-                            "alertname" => alert_name,
-                            "datacenter" => "somedatacenter",
-                            'id' => 'somethingnotfunny',
-                            "instance" => "someinstance",
-                            "job" => "somejob",
-                            "notify" => "live"
-                          },
-                          "annotations" => {
-                            "description" => "some description",
-                            "topic_body" => "some body",
-                            "topic_title" => "some title"
-                          },
-                          "startsAt" => "2018-07-24T23:25:31.363742334Z",
-                          "endsAt" => "0001-01-01T00:00:00Z",
-                          "generatorURL" => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
-                          "status" => {
-                            "state" => "suppressed",
-                            "silencedBy" => [
-                              "1de62db1-ac72-48d8-b2d0-7ce0e8acdcb1"
-                            ],
-                            "inhibitedBy" => nil
-                          },
-                          "receivers" => nil,
-                          "fingerprint" => "09aae3ea59ed5a65"
-                        },
-                        {
-                          "labels" => {
-                            "alertname" => alert_name,
-                            "datacenter" => "somedatacenter",
-                            'id' => 'somethingfunny',
-                            "instance" => "someinstance",
-                            "job" => "somejob",
-                            "notify" => "live"
-                          },
-                          "annotations" => {
-                            "description" => "some description",
-                            "topic_body" => "some body",
-                            "topic_title" => "some title"
-                          },
-                          "startsAt" => "2018-07-24T23:25:31.363742334Z",
-                          "endsAt" => "0001-01-01T00:00:00Z",
-                          "generatorURL" => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
-                          "status" => {
-                            "state" => "suppressed",
-                            "silencedBy" => [
-                              "1de62db1-ac72-48d8-b2d0-7ce0e8acdcb1"
-                            ],
-                            "inhibitedBy" => nil
-                          },
-                          "receivers" => nil,
-                          "fingerprint" => "09aae3ea59ed5a65"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          end
-
-          it 'should update the alerts correctly' do
-            post "/prometheus/receiver/grouped/alerts/#{token}", params: payload
-
-            expect(response.status).to eq(200)
-
-            key = DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD
-            alerts = topic.reload.custom_fields[key]["alerts"]
-
-            [
-              ['doesnotexists', 'stale'],
-              ['somethingfunny', 'suppressed'],
-              ['somethingnotfunny', 'suppressed']
-            ].each do |id, status|
-              expect(alerts.find { |alert| alert['id'] == id }["status"])
-                .to eq(status)
-            end
-
-            expect(topic.title).to eq("some title")
-
-            expect(topic.tags.pluck(:name)).to contain_exactly(
-              datacenter,
-              datacenter2
-            )
-
-            expect(
-              topic.custom_fields[custom_field_key]['alerts'].first['description']
-            ).to eq('some description')
-          end
-
-          it 'should not update the topic if nothing has changed' do
-            post "/prometheus/receiver/grouped/alerts/#{token}", params: payload
-
-            messages = MessageBus.track_publish do
-              post "/prometheus/receiver/grouped/alerts/#{token}", params: payload
-            end
-
-            expect(messages).to eq([])
-          end
-        end
-
         describe 'when payload includes silenced alerts in the new format' do
           let(:payload) do
             {
               "status" => "success",
-              "externalURL" => "supposed.to.be.a.url",
+              "externalURL" => "http://alerts.example.com",
               "graphURL" => "to.be.a.url",
               "data" => [
                 {
@@ -383,27 +252,25 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
             expect(response.status).to eq(200)
 
-            key = DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD
-            alerts = topic.reload.custom_fields[key]["alerts"]
+            alerts = topic.reload.alert_receiver_alerts.to_a
 
             [
               ['doesnotexists', 'stale'],
               ['somethingfunny', 'suppressed'],
               ['somethingnotfunny', 'suppressed']
             ].each do |id, status|
-              expect(alerts.find { |alert| alert['id'] == id }["status"])
+              expect(alerts.find { |alert| alert.identifier == id }.status)
                 .to eq(status)
             end
 
             expect(topic.title).to eq("some title")
 
             expect(topic.tags.pluck(:name)).to contain_exactly(
-              datacenter,
-              datacenter2
+              datacenter
             )
 
             expect(
-              topic.custom_fields[custom_field_key]['alerts'].first['description']
+              topic.alert_receiver_alerts.first.description
             ).to eq('some description')
           end
 
@@ -411,8 +278,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
             post "/prometheus/receiver/grouped/alerts/#{token}", params: payload
             expect(
-              topic.reload.custom_fields[custom_field_key]['alerts'].
-                  find { |a| a["id"] == "somethingnotfunny" }['status']
+              topic.reload.alert_receiver_alerts.
+                find_by(identifier: "somethingnotfunny").status
             ).to eq('suppressed')
 
             payload["data"].find {
@@ -422,8 +289,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             post "/prometheus/receiver/grouped/alerts/#{token}", params: payload
 
             expect(
-              topic.reload.custom_fields[custom_field_key]['alerts'].
-              find { |a| a["id"] == "somethingnotfunny" }['status']
+              topic.reload.alert_receiver_alerts.
+                find_by(identifier: "somethingnotfunny").status
             ).to eq('firing')
           end
 
@@ -439,17 +306,15 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
           it "should not get confused by alerts with the same id" do
             topic2 = Fabricate(:topic, category: category)
-            topic2.custom_fields[custom_field_key] = {
-              'alerts' => [
-                {
-                  'id' => 'somethingfunny',
-                  'starts_at' => "2018-07-24T23:25:31.363742333Z",
-                  'graph_url' => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
-                  'status' => 'firing',
-                  'datacenter' => datacenter
-                }
-              ]
-            }
+            topic2.alert_receiver_alerts.create!(
+              identifier: 'somethingfunny',
+              starts_at: "2018-07-24T23:25:31.363742333Z",
+              graph_url: "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
+              status: 'firing',
+              datacenter: datacenter,
+              external_url: 'http://alerts.example.com'
+            )
+
             topic2.custom_fields[
               DiscoursePrometheusAlertReceiver::TOPIC_BASE_TITLE_CUSTOM_FIELD
             ] = "some title"
@@ -477,132 +342,15 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
             # First topic should be unaffected
             expect(
-              topic.reload.custom_fields[custom_field_key]['alerts'].
-                  find { |a| a["id"] == "somethingfunny" }['status']
+              topic.reload.alert_receiver_alerts.
+                find_by(identifier: "somethingfunny").status
             ).to eq('firing')
 
             # Second topic should be updated
             expect(
-              topic2.reload.custom_fields[custom_field_key]['alerts'].
-                  find { |a| a["id"] == "somethingfunny" }['status']
+              topic2.reload.alert_receiver_alerts.
+                find_by(identifier: "somethingfunny").status
             ).to eq('suppressed')
-          end
-        end
-
-        describe 'when payload is missing one alert' do
-          let(:payload) do
-            {
-              "status" => "success",
-              "externalURL" => "supposed.to.be.a.url",
-              "graphURL" => "to.be.a.url",
-              "data" => [
-                {
-                  "labels" => {
-                    "alertname" => alert_name,
-                    "datacenter" => datacenter
-                  },
-                  "groupKey" => group_key,
-                  "blocks" => [
-                    {
-                      "routeOpts" => {
-                        "receiver" => "somereceiver",
-                        "groupBy" => [
-                          "alertname",
-                          "datacenter"
-                        ],
-                        "groupWait" => 30000000000,
-                        "groupInterval" => 30000000000,
-                        "repeatInterval" => 3600000000000
-                      },
-                      "alerts" => [
-                        {
-                          "labels" => {
-                            "alertname" => alert_name,
-                            "datacenter" => "somedatacenter",
-                            'id' => 'somethingnotfunny',
-                            "instance" => "someinstance",
-                            "job" => "somejob",
-                            "notify" => "live"
-                          },
-                          "annotations" => {
-                            "description" => "some description",
-                            "topic_body" => "some body",
-                            "topic_title" => "some title"
-                          },
-                          "startsAt" => "2018-07-24T23:25:31.363742334Z",
-                          "endsAt" => "0001-01-01T00:00:00Z",
-                          "generatorURL" => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
-                          "status" => {
-                            "state" => "firing"
-                          },
-                          "receivers" => nil,
-                          "fingerprint" => "09aae3ea59ed5a65"
-                        },
-                        {
-                          "labels" => {
-                            "alertname" => alert_name,
-                            "datacenter" => "somedatacenter",
-                            'id' => 'somethingfunny',
-                            "instance" => "someinstance",
-                            "job" => "somejob",
-                            "notify" => "live"
-                          },
-                          "annotations" => {
-                            "description" => "some description",
-                            "topic_body" => "some body",
-                            "topic_title" => "some title"
-                          },
-                          "startsAt" => "2018-07-24T23:25:31.363742334Z",
-                          "endsAt" => "0001-01-01T00:00:00Z",
-                          "generatorURL" => "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
-                          "status" => {
-                            "state" => "firing"
-                          },
-                          "receivers" => nil,
-                          "fingerprint" => "09aae3ea59ed5a65"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          end
-
-          it 'should update the alerts correctly' do
-            post "/prometheus/receiver/grouped/alerts/#{token}", params: payload
-
-            expect(response.status).to eq(200)
-
-            key = DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD
-            alerts = topic.reload.custom_fields[key]["alerts"]
-
-            [
-              ['doesnotexists', 'stale'],
-              ['somethingfunny', 'firing'],
-              ['somethingnotfunny', 'firing']
-            ].each do |id, status|
-              expect(alerts.find { |alert| alert['id'] == id }["status"])
-                .to eq(status)
-            end
-
-            expect(topic.title).to eq("some title (2 firing)")
-
-            expect(topic.tags.pluck(:name)).to contain_exactly(
-              datacenter,
-              datacenter2,
-              "firing"
-            )
-          end
-
-          it 'should not update the topic if nothing has changed' do
-            post "/prometheus/receiver/grouped/alerts/#{token}", params: payload
-
-            messages = MessageBus.track_publish do
-              post "/prometheus/receiver/grouped/alerts/#{token}", params: payload
-            end
-
-            expect(messages).to eq([])
           end
         end
       end
@@ -663,7 +411,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           "version" => "4",
           "status" => "firing",
           "externalURL" => external_url,
-          "logsURL" => logs_url,
           "groupKey" => group_key,
           "groupLabels" => {
             "foo" => "bar",
@@ -686,6 +433,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               "status" => "firing",
               "labels" => {
                 "id" => "somethingfunny",
+                "alertname" => alert_name,
+                "datacenter" => datacenter,
+                "response_sla" => response_sla
               },
               "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
               "startsAt" => "2020-01-02T03:04:05.12345678Z",
@@ -739,20 +489,16 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
           expect(receiver["topic_map"][alert_name]).to eq(topic.id)
 
-          expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
-            [
-              {
-                'id' => "somethingfunny",
-                'starts_at' => "2020-01-02T03:04:05.12345678Z",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'logs_url' => logs_url,
-                'status' => 'firing',
-                'description' => 'some description',
-                'datacenter' => datacenter,
-                'external_url' => external_url
-              },
-            ]
-          )
+          expect(topic.alert_receiver_alerts.count).to eq(1)
+
+          a = topic.alert_receiver_alerts.first
+          expect(a.identifier).to eq("somethingfunny")
+          expect(a.starts_at).to eq_time(DateTime.parse("2020-01-02T03:04:05.12345678Z"))
+          expect(a.graph_url).to eq("http://alerts.example.com/graph?g0.expr=lolrus")
+          expect(a.status).to eq('firing')
+          expect(a.description).to eq('some description')
+          expect(a.datacenter).to eq(datacenter)
+          expect(a.external_url).to eq(external_url)
 
           raw = topic.posts.first.raw
 
@@ -792,32 +538,30 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
       end
 
-      context "a resolving alert for an existing alert" do
+      context "a resolving alert for a closed alert" do
         before do
-          topic.custom_fields[custom_field_key] = {
-            'alerts' => [
-              {
-                'id' => 'somethingfunny',
-                'starts_at' => "2020-01-02T03:04:05.12345678Z",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'logs_url' => "http://logs.example.com/app",
-                'grafana_url' => "http://graphs.example.com/d/xyzabcefg",
-                'status' => 'firing',
-                'datacenter' => datacenter
-              },
-              {
-                'id' => 'somethingnotfunny',
-                'starts_at' => "2020-01-02T03:04:05.12345678Z",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'logs_url' => "http://logs.example.com/app",
-                'grafana_url' => "http://graphs.example.com/d/xyzabcefg",
-                'status' => 'firing',
-                'datacenter' => datacenter
-              },
-            ]
-          }
+          topic.alert_receiver_alerts.create!(
+            identifier: 'somethingfunny',
+            starts_at: "2020-01-02T03:04:05.12345678Z",
+            graph_url: "http://alerts.example.com/graph?g0.expr=lolrus",
+            logs_url: "http://logs.example.com/app",
+            grafana_url: "http://graphs.example.com/d/xyzabcefg",
+            status: 'firing',
+            datacenter: datacenter,
+            external_url: 'http://alerts.example.com'
+          )
+          topic.alert_receiver_alerts.create!(
+            identifier: 'somethingnotfunny',
+            starts_at: "2020-01-02T03:04:05.12345678Z",
+            graph_url: "http://alerts.example.com/graph?g0.expr=lolrus",
+            logs_url: "http://logs.example.com/app",
+            grafana_url: "http://graphs.example.com/d/xyzabcefg",
+            status: 'firing',
+            datacenter: datacenter,
+            external_url: 'http://alerts.example.com'
+          )
 
-          topic.save_custom_fields(true)
+          topic.update!(closed: true)
 
           payload["status"] = "resolved"
 
@@ -840,7 +584,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         let(:topic) { Fabricate(:post).topic }
         let(:topic_map) { { alert_name => topic.id } }
 
-        it "updates the existing topic" do
+        it "does not change existing topic" do
           messages = MessageBus.track_publish('/alert-receiver') do
             expect do
               post "/prometheus/receiver/#{token}", params: payload
@@ -850,43 +594,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           topic.reload
 
           expect(response.status).to eq(200)
-          expect(messages.first.data[:firing_alerts_count]).to eq(1)
+          expect(messages.count).to eq(0)
 
-          expect(topic.title).to eq(
-            "Alert investigation required: AnAlert is on the loose (1 firing)"
-          )
-
-          expect(topic.tags.pluck(:name)).to contain_exactly(
-            datacenter,
-            AlertPostMixin::FIRING_TAG,
-            AlertPostMixin::HIGH_PRIORITY_TAG
-          )
-
-          expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
-            [
-              {
-                'id' => "somethingfunny",
-                'starts_at' => "2020-01-02T03:04:05.12345678Z",
-                'ends_at' => "2020-01-02T09:08:07.09876543Z",
-                "grafana_url" => "http://graphs.example.com/d/xyzabcefg",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'logs_url' => logs_url,
-                'status' => 'resolved',
-                'description' => 'some description',
-                'datacenter' => datacenter,
-                'external_url' => external_url
-              },
-              {
-                'id' => 'somethingnotfunny',
-                'starts_at' => "2020-01-02T03:04:05.12345678Z",
-                "grafana_url" => "http://graphs.example.com/d/xyzabcefg",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'logs_url' => "http://logs.example.com/app",
-                'status' => 'firing',
-                'datacenter' => datacenter
-              }
-            ]
-          )
+          expect(topic.alert_receiver_alerts.firing.count).to eq(2)
         end
       end
 
@@ -895,20 +605,14 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         let(:topic) { Fabricate(:post).topic }
 
         before do
-          topic.custom_fields[custom_field_key] = {
-            'alerts' => [
-              {
-                'id' => 'oldalert',
-                'starts_at' => "2020-01-02T03:04:05.12345678Z",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'status' => 'firing',
-                'datacenter' => datacenter,
-                'external_url' => external_url
-              }
-            ]
-          }
-
-          topic.save_custom_fields(true)
+          topic.alert_receiver_alerts.create!(
+            identifier: 'oldalert',
+            starts_at: "2020-01-02T03:04:05.12345678Z",
+            graph_url: "http://alerts.example.com/graph?g0.expr=lolrus",
+            status: 'firing',
+            datacenter: datacenter,
+            external_url: external_url
+          )
 
           payload["alerts"] = [
             {
@@ -918,6 +622,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               "status" => "firing",
               "labels" => {
                 "id" => "oldalert",
+                "datacenter" => datacenter,
               },
               "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
               "startsAt" => "2020-01-02T03:04:05.12345678Z",
@@ -929,6 +634,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               "status" => "firing",
               "labels" => {
                 "id" => "newalert",
+                "datacenter" => datacenter,
               },
               "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
               "startsAt" => "2020-12-31T23:59:59.75645342Z",
@@ -953,28 +659,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             AlertPostMixin::HIGH_PRIORITY_TAG
           )
 
-          expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
+          expect(topic.alert_receiver_alerts.pluck(:identifier, :status)).to eq(
             [
-              {
-                'id' => "oldalert",
-                'starts_at' => "2020-01-02T03:04:05.12345678Z",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'logs_url' => logs_url,
-                'status' => 'firing',
-                'description' => 'some description',
-                'datacenter' => datacenter,
-                'external_url' => external_url
-              },
-              {
-                'id' => "newalert",
-                'starts_at' => "2020-12-31T23:59:59.75645342Z",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'logs_url' => logs_url,
-                'status' => 'firing',
-                'description' => 'some description',
-                'datacenter' => datacenter,
-                'external_url' => external_url
-              },
+              ["oldalert", "firing"],
+              ["newalert", "firing"]
             ]
           )
         end
@@ -991,7 +679,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           end
 
           freeze_time(2.hours.from_now) do
-            payload["alerts"][0]["status"] = "stale"
+            payload["alerts"][0]["status"] = "resolved"
             expect do
               post "/prometheus/receiver/#{token}", params: payload
             end.to change { topic.reload.bumped_at }
@@ -1002,7 +690,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           end
 
           freeze_time(3.hours.from_now) do
-            payload["alerts"][1]["status"] = "stale"
+            payload["alerts"][1]["status"] = "resolved"
             expect do
               post "/prometheus/receiver/#{token}", params: payload
             end.to_not change { topic.reload.bumped_at }
@@ -1029,6 +717,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
                 "status" => "firing",
                 "labels" => {
                   "id" => "oldalert",
+                  "datacenter" => datacenter2,
                 },
                 "generatorURL" => "http://alerts.example.com/graph?g0.expr=lolrus",
                 "startsAt" => "2020-12-31T23:59:59.75645342Z",
@@ -1054,26 +743,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               AlertPostMixin::HIGH_PRIORITY_TAG
             )
 
-            expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
+            expect(topic.alert_receiver_alerts.pluck(:identifier, :datacenter, :external_url, :status)).to eq(
               [
-                {
-                  'id' => "oldalert",
-                  'starts_at' => "2020-01-02T03:04:05.12345678Z",
-                  'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                  'status' => 'firing',
-                  'datacenter' => datacenter,
-                  'external_url' => external_url
-                },
-                {
-                  'id' => "oldalert",
-                  'starts_at' => "2020-12-31T23:59:59.75645342Z",
-                  'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                  'logs_url' => logs_url,
-                  'status' => 'firing',
-                  'description' => 'some description',
-                  'datacenter' => datacenter2,
-                  'external_url' => external_url2
-                },
+                ["oldalert", "some-datacenter", "supposed.to.be.a.url", "firing"],
+                ["oldalert", "datacenter-2", "supposed.be.a.url.2", "firing"]
               ]
             )
 
@@ -1086,19 +759,14 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         let(:topic_map) { { alert_name => topic.id } }
 
         before do
-          topic.custom_fields[custom_field_key] = {
-            'alerts' => [
-              {
-                'id' => 'somethingfunny',
-                'starts_at' => "2020-01-02T03:04:05.12345678Z",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'status' => 'firing',
-                'datacenter' => datacenter
-              }
-            ]
-          }
-
-          topic.save_custom_fields(true)
+          topic.alert_receiver_alerts.create!(
+            identifier: 'somethingfunny',
+            starts_at: "2020-01-02T03:04:05.12345678Z",
+            graph_url: "http://alerts.example.com/graph?g0.expr=lolrus",
+            status: 'firing',
+            datacenter: datacenter,
+            external_url: external_url
+          )
 
           payload["alerts"] = [
             {
@@ -1122,20 +790,11 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         it "does not change the existing topic" do
           expect do
             post "/prometheus/receiver/#{token}", params: payload
-          end.to_not change { topic.reload.posts.first.revisions.count }
+          end.to_not change { topic.reload.alert_receiver_alerts.pluck(AlertReceiverAlert.column_names) }
 
-          expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
+          expect(topic.alert_receiver_alerts.pluck(:identifier, :status)).to eq(
             [
-              {
-                'id' => "somethingfunny",
-                'starts_at' => "2020-01-02T03:04:05.12345678Z",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'logs_url' => logs_url,
-                'status' => 'firing',
-                'description' => 'some description',
-                'datacenter' => datacenter,
-                'external_url' => external_url
-              },
+             ["somethingfunny", 'firing']
             ]
           )
         end
@@ -1146,22 +805,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
           expect do
             post "/prometheus/receiver/#{token}", params: payload
-          end.to_not change { topic.reload.posts.first.revisions.count }
-
-          expect(topic.custom_fields[custom_field_key]['alerts']).to eq(
-            [
-              {
-                'id' => "somethingfunny",
-                'starts_at' => "2020-01-02T03:04:05.12345678Z",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'logs_url' => logs_url,
-                'status' => 'firing',
-                'description' => 'some description',
-                'datacenter' => datacenter,
-                'external_url' => external_url
-              },
-            ]
-          )
+          end.to_not change { topic.reload.alert_receiver_alerts.pluck(AlertReceiverAlert.column_names) }
         end
       end
 
@@ -1171,17 +815,13 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             created_at: DateTime.new(2018, 7, 27, 19, 33, 44)
           )
 
-          closed_topic.custom_fields[custom_field_key] = {
-            'alerts' => [
-              {
-                'id' => 'somethingfunny',
-                'starts_at' => "2020-01-02T03:04:05.12345678Z",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-              }
-            ]
-          }
-
-          closed_topic.save_custom_fields(true)
+          closed_topic.alert_receiver_alerts.create!(
+            identifier: 'somethingfunny',
+            starts_at: "2020-01-02T03:04:05.12345678Z",
+            graph_url: "http://alerts.example.com/graph?g0.expr=lolrus",
+            external_url: external_url,
+            status: 'firing'
+          )
 
           payload["alerts"] = [
             {
@@ -1215,17 +855,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
           expect do
             post "/prometheus/receiver/#{token}", params: payload
-          end.to_not change { closed_topic.reload.posts.first.revisions.count }
-
-          expect(closed_topic.custom_fields[custom_field_key]['alerts']).to eq(
-            [
-              {
-                'id' => "somethingfunny",
-                'starts_at' => "2020-01-02T03:04:05.12345678Z",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus"
-              },
-            ]
-          )
+          end.to_not change { closed_topic.reload.alert_receiver_alerts.pluck(AlertReceiverAlert.column_names) }
 
           expect(keyed_topic.title).to eq(
             "Alert investigation required: AnAlert is on the loose (1 firing)"
@@ -1239,18 +869,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
           expect(receiver["topic_map"][alert_name]).to eq(keyed_topic.id)
 
-          expect(keyed_topic.custom_fields[custom_field_key]['alerts']).to eq(
+          expect(keyed_topic.alert_receiver_alerts.pluck(:identifier, :status)).to eq(
             [
-              {
-                'id' => "anotheralert",
-                'starts_at' => "2020-12-31T23:59:59.98765Z",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'logs_url' => logs_url,
-                'status' => 'firing',
-                'description' => 'some description',
-                'datacenter' => datacenter,
-                'external_url' => external_url
-              },
+              ['anotheralert', 'firing']
             ]
           )
 
@@ -1266,19 +887,14 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         let(:topic_map) { { alert_name => topic.id } }
 
         before do
-          topic.custom_fields[custom_field_key] = {
-            'alerts' => [
-              {
-                'id' => 'somethingfunny',
-                'starts_at' => "2020-01-02T03:04:05.12345678Z",
-                'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-                'status' => "firing",
-                'datacenter' => datacenter
-              }
-            ]
-          }
-
-          topic.save_custom_fields(true)
+          topic.alert_receiver_alerts.create!(
+            identifier: 'somethingfunny',
+            starts_at: "2020-01-02T03:04:05.12345678Z",
+            graph_url: "http://alerts.example.com/graph?g0.expr=lolrus",
+            status: "firing",
+            datacenter: datacenter,
+            external_url: external_url
+          )
 
           payload["status"] = "resolved"
 
@@ -1302,7 +918,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           it "should update the first post of the topic" do
             expect do
               post "/prometheus/receiver/#{token}", params: payload
-            end.to change { first_post.reload.raw } &
+            end.to change { topic.reload.alert_receiver_alerts.pluck(AlertReceiverAlert.column_names) } &
               change { topic.reload.title }
 
             expect(topic.title).to eq(

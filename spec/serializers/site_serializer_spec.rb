@@ -3,10 +3,6 @@
 require 'rails_helper'
 
 RSpec.describe SiteSerializer do
-  let(:custom_field_key) do
-    DiscoursePrometheusAlertReceiver::ALERT_HISTORY_CUSTOM_FIELD
-  end
-
   describe '#firing_alerts' do
     let(:json) do
       site = Site.new(guardian)
@@ -25,18 +21,13 @@ RSpec.describe SiteSerializer do
         topic2 => 'resolved',
         topic3 => 'firing'
       }.each do |topic, status|
-        topic.custom_fields[custom_field_key] = {
-          'alerts' => [
-            {
-              'id' => 'somethingfunny',
-              'starts_at' => "2020-01-02T03:04:05.12345678Z",
-              'graph_url' => "http://alerts.example.com/graph?g0.expr=lolrus",
-              'status' => status
-            }
-          ]
-        }
-
-        topic.save_custom_fields(true)
+        topic.alert_receiver_alerts.create!(
+              identifier: 'somethingfunny',
+              starts_at: "2020-01-02T03:04:05.12345678Z",
+              graph_url: "http://alerts.example.com/graph?g0.expr=lolrus",
+              status: status,
+              external_url: "alerts.example.com"
+        )
       end
     end
 

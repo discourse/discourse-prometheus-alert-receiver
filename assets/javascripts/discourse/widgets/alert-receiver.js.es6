@@ -207,7 +207,7 @@ createWidget("alert-receiver-row", {
   },
 
   template: hbs`
-    <td><a href={{transformed.graphUrl}}>{{attrs.alert.id}}</a></td>
+    <td><a href={{transformed.graphUrl}}>{{attrs.alert.identifier}}</a></td>
     <td>
       {{alert-receiver-date-range 
           startsAt=attrs.alert.starts_at

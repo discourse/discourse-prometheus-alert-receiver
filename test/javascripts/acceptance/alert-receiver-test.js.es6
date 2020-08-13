@@ -4,7 +4,7 @@ import Fixtures from "fixtures/topic";
 function alertData(status, datacenter, id) {
   const data = {
     status,
-    id,
+    identifier: id,
     datacenter,
     starts_at: "2020-07-27T17:26:49.526234411Z",
     ends_at: null,

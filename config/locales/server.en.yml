@@ -8,4 +8,5 @@ en:
     topic_title: 
       not_firing: "%{base_title}"
       firing: "%{base_title} (%{count} firing)"
+      untitled: Untitled alert topic
       

@@ -61,6 +61,7 @@ module AlertPostMixin
   end
 
   def generate_title(base_title, firing_count)
+    base_title = base_title.presence || I18n.t('prom_alert_receiver.topic_title.untitled')
     if firing_count > 0
       I18n.t("prom_alert_receiver.topic_title.firing", base_title: base_title, count: firing_count)
     else

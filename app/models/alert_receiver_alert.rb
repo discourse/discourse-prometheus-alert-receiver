@@ -8,10 +8,10 @@ class AlertReceiverAlert < ActiveRecord::Base
   scope :firing, -> { where(status: 'firing') }
   scope :stale, -> { where(status: 'stale') }
 
-  def self.update_resolved(alerts)
+  def self.update_resolved_and_suppressed(alerts)
     return [] unless alerts.present?
 
-    value_columns = ['topic_id', 'external_url', 'identifier', 'ends_at']
+    value_columns = ['topic_id', 'external_url', 'identifier', 'status', 'ends_at', 'description']
 
     values_array = alerts.pluck(*value_columns.map(&:to_sym))
     values_hash = Hash[values_array.each_with_index.map { |v, i| [:"value#{i}", v] }]
@@ -20,13 +20,17 @@ class AlertReceiverAlert < ActiveRecord::Base
 
     query = <<~SQL
       UPDATE alert_receiver_alerts alerts
-      SET status='resolved', ends_at=data.ends_at::timestamp
+      SET status=data.status, ends_at=data.ends_at::timestamp, description=data.description
       FROM (values #{values_string})
-        AS data(topic_id, external_url, identifier, ends_at)
+        AS data(topic_id, external_url, identifier, status, ends_at, description)
       WHERE alerts.topic_id = data.topic_id
         AND alerts.external_url = data.external_url
         AND alerts.identifier = data.identifier
         AND (alerts.status IN ('firing', 'suppressed'))
+        AND (
+          alerts.status IS DISTINCT FROM data.status
+          OR alerts.description IS DISTINCT FROM data.description
+        )
       RETURNING alerts.topic_id
     SQL
 
@@ -35,7 +39,7 @@ class AlertReceiverAlert < ActiveRecord::Base
     topic_ids.uniq
   end
 
-  def self.update_active(alerts)
+  def self.update_firing(alerts)
     return [] unless alerts.present?
 
     insert_columns = column_names - ['id']
@@ -109,13 +113,12 @@ class AlertReceiverAlert < ActiveRecord::Base
 
   def self.update_alerts(alerts, mark_stale_external_url: nil)
     groups = alerts.group_by { |a| a[:status] }
-    active = [*groups['firing'], *groups['suppressed']]
 
-    topic_ids = self.update_active(active)
-    topic_ids += self.update_resolved(groups['resolved'])
+    topic_ids = self.update_firing(groups['firing'])
+    topic_ids += self.update_resolved_and_suppressed([*groups['resolved'], *groups['suppressed']])
 
     if mark_stale_external_url
-      topic_ids += self.mark_stale(active_alerts: active, external_url: mark_stale_external_url)
+      topic_ids += self.mark_stale(active_alerts: [*groups['firing'], *groups['suppressed']], external_url: mark_stale_external_url)
     end
 
     topic_ids.uniq

@@ -40,6 +40,18 @@ RSpec.describe 'alert_receiver_alert' do
     expect(AlertReceiverAlert.firing.count).to eq(0)
   end
 
+  it "does not insert suppressed alerts" do
+    AlertReceiverAlert.update_alerts([
+      alert(identifier: 'myid1', status: 'suppressed'),
+      alert(identifier: 'myid2', status: 'firing'),
+      alert(identifier: 'myid1', datacenter: "dc2", status: 'suppressed'),
+      alert(identifier: 'myid2', datacenter: "dc2", status: 'firing')
+    ])
+
+    expect(AlertReceiverAlert.count).to eq(2)
+    expect(AlertReceiverAlert.firing.count).to eq(2)
+  end
+
   it "can return modified topic ids" do
     topic_ids = AlertReceiverAlert.update_alerts([
       alert(identifier: 'myid1'),

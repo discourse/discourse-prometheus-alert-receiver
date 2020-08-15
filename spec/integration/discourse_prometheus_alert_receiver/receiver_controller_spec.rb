@@ -928,6 +928,10 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             expect(topic.tags.pluck(:name)).to contain_exactly(
               datacenter, AlertPostMixin::HIGH_PRIORITY_TAG
             )
+
+            alert = topic.alert_receiver_alerts.first
+            expect(alert.status).to eq('resolved')
+            expect(alert.ends_at).to eq_time(DateTime.parse('2020-01-02T09:08:07.09876543Z'))
           end
         end
 

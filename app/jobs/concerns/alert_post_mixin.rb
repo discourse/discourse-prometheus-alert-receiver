@@ -34,7 +34,7 @@ module AlertPostMixin
         alert[:grafana_url] = "#{grafana_url}#{dashboard_path}"
       end
 
-      alert[:ends_at] = nil if alert['status'] != 'resolved'
+      alert[:ends_at] = nil if alert[:status] != 'resolved'
 
       alert
     end

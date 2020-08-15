@@ -72,7 +72,7 @@ QUnit.test("displays all the alerts", async assert => {
     find(
       ".prometheus-alert-receiver [data-alert-status='resolved'] table tr td:first-child a"
     ).attr("href"),
-    "https://metrics.sjc1.discourse.cloud/graph?g0.expr=mymetric&g0.tab=0&g0.range_input=1126.344s&g0.end_input=2020-07-27T17%3A40%3A35.870Z",
+    "https://metrics.sjc1.discourse.cloud/graph?g0.expr=mymetric&g0.tab=0&g0.range_input=1127s&g0.end_input=2020-07-27T17%3A40%3A35.870Z",
     "links each alert to its graph, with added timestamp"
   );
 

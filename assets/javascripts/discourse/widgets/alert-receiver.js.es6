@@ -181,7 +181,7 @@ createWidget("alert-receiver-row", {
     const windowDuration = (end - start) / 1000 + 600; // Add 10 minutes
     const windowEndDate = new Date(end.getTime() + 300 * 1000); // Shift 5 minutes forward
 
-    url.searchParams.set("g0.range_input", `${windowDuration}s`);
+    url.searchParams.set("g0.range_input", `${Math.ceil(windowDuration)}s`);
     url.searchParams.set("g0.end_input", windowEndDate.toISOString());
     url.searchParams.set("g0.tab", "0");
 

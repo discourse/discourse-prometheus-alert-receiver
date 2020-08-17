@@ -112,6 +112,8 @@ class AlertReceiverAlert < ActiveRecord::Base
   end
 
   def self.update_alerts(alerts, mark_stale_external_url: nil)
+    alerts = alerts.uniq { |a| [a[:topic_id], a[:external_url], a[:identifier]] }
+
     groups = alerts.group_by { |a| a[:status] }
 
     topic_ids = self.update_firing(groups['firing'])

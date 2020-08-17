@@ -113,4 +113,16 @@ RSpec.describe 'alert_receiver_alert' do
     expect(AlertReceiverAlert.firing.count).to eq(3)
     expect(AlertReceiverAlert.stale.count).to eq(1)
   end
+
+  it "discards duplicate alerts before inserting" do
+    AlertReceiverAlert.update_alerts([
+      alert(identifier: 'myid1'),
+      alert(identifier: 'myid1'),
+      alert(identifier: 'myid2'),
+      alert(identifier: 'myid2')
+    ])
+
+    expect(AlertReceiverAlert.count).to eq(2)
+    expect(AlertReceiverAlert.firing.count).to eq(2)
+  end
 end

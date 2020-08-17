@@ -2,10 +2,10 @@
   display: flex;
   flex-direction: column;
 
-  * {
-    order: 2;
+  & > * {
+    order: 3;
   }
-  .cooked {
+  & > .cooked {
     order: 1;
   }
 }

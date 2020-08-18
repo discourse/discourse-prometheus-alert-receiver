@@ -285,10 +285,7 @@ createWidget("alert-receiver-collapse-toggle", {
 
 createWidget("alert-receiver-table", {
   tagName: "div.alert-receiver-table",
-  buildKey: attrs => `alert-table-${attrs.status}-${attrs.headingLink}`,
-  buildClasses() {
-    return `md-table`;
-  },
+  buildKey: attrs => `alert-table-${attrs.status}-${attrs.heading}`,
 
   buildAttributes(attrs) {
     return {
@@ -311,13 +308,15 @@ createWidget("alert-receiver-table", {
     {{alert-receiver-collapse-toggle heading=attrs.heading count=attrs.alerts.length headingLink=attrs.headingLink collapsed=state.collapsed}}
 
     {{#unless state.collapsed}}
-      <table class="prom-alerts-table">
-        <tbody>        
-          {{#each attrs.alerts as |alert|}}
-            {{alert-receiver-row alert=alert showDescription=this.transformed.showDescriptionColumn}}
-          {{/each}}
-        </tbody>
-      </table>
+      <div class='alert-table-wrapper'>
+        <table class="prom-alerts-table">
+          <tbody>        
+            {{#each attrs.alerts as |alert|}}
+              {{alert-receiver-row alert=alert showDescription=this.transformed.showDescriptionColumn}}
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
     {{/unless}}
   `,
 

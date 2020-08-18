@@ -9,6 +9,7 @@ en:
       actions:
         quote: Quote Alert
         logs: Open Kibana
+        alertmanager: Open Alertmanager
     filters:
       alerts-category:
         title_with_count:

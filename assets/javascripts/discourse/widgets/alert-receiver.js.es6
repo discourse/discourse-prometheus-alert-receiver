@@ -37,6 +37,8 @@ createWidget("alert-receiver-data", {
 
     const content = [];
 
+    let collapsed = false;
+
     STATUS_NAMES.forEach(statusName => {
       const groupedByDc = groupedByStatus[statusName];
       if (!groupedByDc) return;
@@ -51,30 +53,18 @@ createWidget("alert-receiver-data", {
       headerContent.push(I18n.t(`prom_alert_receiver.headers.${statusName}`));
       content.push(h("h2", {}, headerContent));
 
-      const collapsed = statusCounts[statusName] > COLLAPSE_THRESHOLD;
+      if (statusCounts[statusName] > COLLAPSE_THRESHOLD) collapsed = true;
 
       Object.entries(groupedByDc).forEach(([dcName, alerts]) => {
         const table = this.attach("alert-receiver-table", {
           status: statusName,
           alerts: alerts,
           heading: dcName,
-          headingLink: alerts[0].external_url
+          headingLink: alerts[0].external_url,
+          defaultCollapsed: collapsed
         });
-        let toAppend = table;
 
-        if (collapsed) {
-          toAppend = this.attach("alert-receiver-collapsible-table", {
-            alerts: alerts,
-            heading: dcName,
-            status: statusName,
-            headingLink: alerts[0].external_url,
-            contents: () => {
-              return table;
-            }
-          });
-        }
-
-        content.push(toAppend);
+        content.push(table);
       });
     });
 
@@ -252,46 +242,50 @@ createWidget("alert-receiver-row", {
   `
 });
 
-createWidget("alert-receiver-collapsible-table", {
-  tagName: "div.collapsible-table",
-  buildKey: attrs => `collapsible-${attrs.status}-${attrs.headingLink}`,
-
-  defaultState() {
-    return { collapsed: true };
-  },
-
+createWidget("alert-receiver-external-link", {
+  tagName: "div.external-link",
+  click() {},
   template: hbs`
-    {{alert-receiver-collapse-toggle collapsed=state.collapsed heading=attrs.heading count=attrs.alerts.length}}
-      
-    {{#unless state.collapsed}}
-      {{yield}}
-    {{/unless}}
-  `,
-
-  toggleCollapse() {
-    this.state.collapsed = !this.state.collapsed;
-  }
+    <a target='_blank' href={{attrs.link}} title={{i18n "prom_alert_receiver.actions.alertmanager"}}>
+      {{d-icon 'external-link-alt'}}
+    </a>
+  `
 });
 
 createWidget("alert-receiver-collapse-toggle", {
   tagName: "div",
 
-  buildClasses() {
-    return "alert-receiver-collapse-toggle";
+  buildClasses(attrs) {
+    let classString = "alert-receiver-collapse-toggle";
+    if (attrs.collapsed) classString += " collapsed";
+    return classString;
   },
 
   click() {
     this.sendWidgetAction("toggleCollapse");
   },
 
+  transform(attrs) {
+    return {
+      icon: attrs.collapsed ? "caret-right" : "caret-down"
+    };
+  },
+
   template: hbs`
-    {{#if attrs.collapsed}}►{{else}}▼{{/if}} {{attrs.heading}} ({{attrs.count}})
+    <div class='collapse-icon'>
+      <a>{{d-icon this.transformed.icon}}</a>
+    </div> 
+    <div class='heading'>
+      {{attrs.heading}}
+      ({{attrs.count}})
+    </div>
+    {{alert-receiver-external-link link=attrs.headingLink}}
   `
 });
 
 createWidget("alert-receiver-table", {
-  tagName: "div",
-
+  tagName: "div.alert-receiver-table",
+  buildKey: attrs => `alert-table-${attrs.status}-${attrs.headingLink}`,
   buildClasses() {
     return `md-table`;
   },
@@ -302,27 +296,32 @@ createWidget("alert-receiver-table", {
     };
   },
 
-  transform(attrs) {
+  transform(attrs, state) {
     return {
-      showDescriptionColumn: attrs.alerts.any(a => a.description)
+      showDescriptionColumn: attrs.alerts.any(a => a.description),
+      collapseToggleIcon: state.collapsed ? "caret-right" : "caret-down"
     };
   },
 
+  defaultState(attrs) {
+    return { collapsed: attrs.defaultCollapsed };
+  },
+
   template: hbs`
-    <table class="prom-alerts-table">
-      <thead>
-        <tr>
-          <th><a href={{attrs.headingLink}}>{{attrs.heading}}</a></th>
-          <th></th>
-          {{#if transformed.showDescriptionColumn}}<th></th>{{/if}}
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>        
-        {{#each attrs.alerts as |alert|}}
-          {{alert-receiver-row alert=alert showDescription=this.transformed.showDescriptionColumn}}
-        {{/each}}
-      </tbody>
-    </table>
-  `
+    {{alert-receiver-collapse-toggle heading=attrs.heading count=attrs.alerts.length headingLink=attrs.headingLink collapsed=state.collapsed}}
+
+    {{#unless state.collapsed}}
+      <table class="prom-alerts-table">
+        <tbody>        
+          {{#each attrs.alerts as |alert|}}
+            {{alert-receiver-row alert=alert showDescription=this.transformed.showDescriptionColumn}}
+          {{/each}}
+        </tbody>
+      </table>
+    {{/unless}}
+  `,
+
+  toggleCollapse() {
+    this.state.collapsed = !this.state.collapsed;
+  }
 });

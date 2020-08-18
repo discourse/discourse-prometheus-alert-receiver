@@ -18,6 +18,7 @@
 
   & > h2 {
     margin: 1em 0 0.5em;
+    font-size: $font-up-2;
 
     &:first-of-type {
       margin-top: 0;
@@ -26,36 +27,68 @@
 
   .alert-receiver-collapse-toggle {
     cursor: pointer;
+    padding: 3px;
+    display: flex;
+
+    &:not(.collapsed) {
+      border-bottom: 1px solid var(--primary-low);
+    }
+
+    .collapse-icon a,
+    .external-link a {
+      padding: 3px;
+      color: var(--primary-low-mid);
+    }
+
+    .heading {
+      flex: 1;
+    }
+
+    &:hover .collapse-icon a {
+      color: var(--primary);
+    }
+
+    .external-link a:hover {
+      color: var(--primary);
+    }
+  }
+
+  .alert-receiver-table {
+    width: 100%;
+    border: 1px solid var(--primary-low);
+    border-radius: 3px;
+    background-color: var(--secondary);
+  }
+
+  tbody {
+    border: none;
   }
 
   table {
     position: relative;
-  }
-
-  thead {
-    th {
-      text-align: left;
-      padding-bottom: 2px;
-      font-weight: bold;
-      color: var(--primary);
-    }
+    width: 100%;
   }
 
   td {
     padding: 3px 3px 3px 0.5em;
   }
 
-  th {
-    a {
-      color: var(--primary, $primary);
-    }
-  }
-
   tr {
-    position: relative;
+    &:hover {
+      background-color: var(--primary-very-low);
+    }
+
+    &:last-of-type {
+      border-bottom: none;
+    }
 
     td:last-child {
       white-space: nowrap;
+      text-align: right;
+
+      .btn-flat {
+        padding: 0 3px;
+      }
     }
   }
 

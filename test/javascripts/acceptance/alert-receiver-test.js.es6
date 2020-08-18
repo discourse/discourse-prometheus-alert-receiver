@@ -61,9 +61,7 @@ QUnit.test("displays all the alerts", async assert => {
   );
 
   assert.equal(
-    find(".prometheus-alert-receiver table thead th:first-child a").attr(
-      "href"
-    ),
+    find(".prometheus-alert-receiver .external-link a").attr("href"),
     "http://alertmanager.example.com",
     "links the per-dc header to the alertmanager"
   );

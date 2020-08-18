@@ -36,6 +36,21 @@ export default {
               id: this.model.postStream.firstPostId
             });
           }
+        },
+
+        _quoteAlert(text) {
+          this.quoteState.selected(this.model.postStream.firstPostId, text, {});
+          this.send("selectText");
+        },
+
+        init() {
+          this._super(...arguments);
+          this.appEvents.on("alerts:quote-alert", this, "_quoteAlert");
+        },
+
+        willDestroy() {
+          this._super(...arguments);
+          this.appEvents.off("alerts:quote-alert", this, "_quoteAlert");
         }
       });
     });

@@ -15,7 +15,7 @@ const COLLAPSE_THRESHOLD = 30;
 createWidget("alert-receiver-data", {
   tagName: "div",
   buildClasses() {
-    return "cooked prometheus-alert-receiver";
+    return "prometheus-alert-receiver";
   },
 
   html(attrs) {
@@ -66,6 +66,8 @@ createWidget("alert-receiver-data", {
           toAppend = this.attach("alert-receiver-collapsible-table", {
             alerts: alerts,
             heading: dcName,
+            status: statusName,
+            headingLink: alerts[0].external_url,
             contents: () => {
               return table;
             }
@@ -206,6 +208,18 @@ createWidget("alert-receiver-row", {
     return url.toString();
   },
 
+  quoteAlert(val) {
+    let alertString = `**${val.identifier}** - ${val.datacenter}`;
+
+    alertString += ` - [date=${val.starts_at.split("T")[0]} time=${
+      val.starts_at.split("T")[1]
+    } displayedTimezone=UTC format="YYYY-MM-DD HH:mm"]`;
+
+    if (val.description) alertString += ` - ${val.description}`;
+
+    this.appEvents.trigger("alerts:quote-alert", alertString);
+  },
+
   template: hbs`
     <td><a href={{transformed.graphUrl}}>{{attrs.alert.identifier}}</a></td>
     <td>
@@ -219,7 +233,17 @@ createWidget("alert-receiver-row", {
     {{/if}}
     <td>
       <div>
-        <a href={{transformed.logsUrl}}>{{emoji name='file_folder'}}</a>
+        {{flat-button 
+          action="quoteAlert"
+          icon="quote-left"
+          actionParam=attrs.alert
+          title="prom_alert_receiver.actions.quote"
+        }}
+        <a class='btn-flat no-text btn-icon' 
+           href={{transformed.logsUrl}}
+           title={{i18n "prom_alert_receiver.actions.logs"}}>
+           {{d-icon 'far-list-alt'}}
+        </a>
         {{#if transformed.grafanaUrl}}
           <a href={{transformed.grafanaUrl}}>{{emoji name='bar_chart'}}</a>
         {{/if}}
@@ -230,12 +254,38 @@ createWidget("alert-receiver-row", {
 
 createWidget("alert-receiver-collapsible-table", {
   tagName: "div.collapsible-table",
+  buildKey: attrs => `collapsible-${attrs.status}-${attrs.headingLink}`,
+
+  defaultState() {
+    return { collapsed: true };
+  },
 
   template: hbs`
-    <details>
-      <summary>{{attrs.heading}} ({{attrs.alerts.length}})</summary>
+    {{alert-receiver-collapse-toggle collapsed=state.collapsed heading=attrs.heading count=attrs.alerts.length}}
+      
+    {{#unless state.collapsed}}
       {{yield}}
-    </details>
+    {{/unless}}
+  `,
+
+  toggleCollapse() {
+    this.state.collapsed = !this.state.collapsed;
+  }
+});
+
+createWidget("alert-receiver-collapse-toggle", {
+  tagName: "div",
+
+  buildClasses() {
+    return "alert-receiver-collapse-toggle";
+  },
+
+  click() {
+    this.sendWidgetAction("toggleCollapse");
+  },
+
+  template: hbs`
+    {{#if attrs.collapsed}}►{{else}}▼{{/if}} {{attrs.heading}} ({{attrs.count}})
   `
 });
 

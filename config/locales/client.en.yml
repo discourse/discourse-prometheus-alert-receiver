@@ -6,6 +6,9 @@ en:
         resolved: "History"
         stale: "Stale"
         suppressed: "Silenced"
+      actions:
+        quote: Quote Alert
+        logs: Open Kibana
     filters:
       alerts-category:
         title_with_count:

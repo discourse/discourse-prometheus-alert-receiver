@@ -553,7 +553,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             post "/prometheus/receiver/#{token}", params: payload
           end.to change { AlertReceiverAlert.count }.by(1)
 
-          expect(topic.alert_receiver_alert.first.identifier).to eq('')
+          expect(topic.alert_receiver_alerts.first.identifier).to eq('')
         end
       end
 

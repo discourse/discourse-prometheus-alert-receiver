@@ -2,10 +2,10 @@ en:
   js:
     prom_alert_receiver:
       headers:
-        firing: "Firing Alerts"
-        resolved: "Alert History"
-        stale: "Stale Alerts"
-        suppressed: "Silenced Alerts"
+        firing: "Firing"
+        resolved: "History"
+        stale: "Stale"
+        suppressed: "Silenced"
     filters:
       alerts-category:
         title_with_count:

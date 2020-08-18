@@ -270,7 +270,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             )
 
             expect(
-              topic.alert_receiver_alerts.first.description
+              topic.alert_receiver_alerts.find_by(identifier: "somethingfunny").description
             ).to eq('some description')
           end
 
@@ -659,11 +659,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             AlertPostMixin::HIGH_PRIORITY_TAG
           )
 
-          expect(topic.alert_receiver_alerts.pluck(:identifier, :status)).to eq(
-            [
-              ["oldalert", "firing"],
-              ["newalert", "firing"]
-            ]
+          expect(topic.alert_receiver_alerts.pluck(:identifier, :status)).to contain_exactly(
+            ["oldalert", "firing"],
+            ["newalert", "firing"]
           )
         end
 
@@ -743,11 +741,9 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               AlertPostMixin::HIGH_PRIORITY_TAG
             )
 
-            expect(topic.alert_receiver_alerts.pluck(:identifier, :datacenter, :external_url, :status)).to eq(
-              [
-                ["oldalert", "some-datacenter", "supposed.to.be.a.url", "firing"],
-                ["oldalert", "datacenter-2", "supposed.be.a.url.2", "firing"]
-              ]
+            expect(topic.alert_receiver_alerts.pluck(:identifier, :datacenter, :external_url, :status)).to contain_exactly(
+              ["oldalert", "some-datacenter", "supposed.to.be.a.url", "firing"],
+              ["oldalert", "datacenter-2", "supposed.be.a.url.2", "firing"]
             )
 
           end

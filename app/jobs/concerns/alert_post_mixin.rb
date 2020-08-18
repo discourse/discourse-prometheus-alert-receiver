@@ -21,7 +21,7 @@ module AlertPostMixin
         external_url: external_url,
         alertname: raw_alert['labels']['alertname'],
         datacenter: raw_alert["labels"]["datacenter"],
-        identifier: raw_alert['labels']['id'],
+        identifier: raw_alert['labels']['id'] || '',
         status: normalize_status(raw_alert['status']),
         starts_at: raw_alert['startsAt'],
         ends_at: raw_alert['status'] == 'firing' ? nil : raw_alert['endsAt'],

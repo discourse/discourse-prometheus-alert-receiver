@@ -538,6 +538,25 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
       end
 
+      context "an alert with no identifier" do
+        let(:topic) { Fabricate(:post).topic }
+        let(:topic_map) { { alert_name => topic.id } }
+
+        before do
+          payload["alerts"].first["labels"].delete("id")
+        end
+
+        it "should update the topic" do
+          freeze_time Time.now.utc
+
+          expect do
+            post "/prometheus/receiver/#{token}", params: payload
+          end.to change { AlertReceiverAlert.count }.by(1)
+
+          expect(topic.alert_receiver_alert.first.identifier).to eq('')
+        end
+      end
+
       context "a resolving alert for a closed alert" do
         before do
           topic.alert_receiver_alerts.create!(

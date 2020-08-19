@@ -113,16 +113,12 @@ createWidget("alert-receiver-date-range", {
     const content = [];
     if (!attrs.startsAt) return;
 
-    if (!attrs.endsAt) {
-      content.push("active since ");
-    }
-
     content.push(
       this.attach("alert-receiver-date", { timestamp: attrs.startsAt })
     );
 
     if (attrs.endsAt) {
-      content.push(" to ");
+      content.push(" - ");
       const startDate = attrs.startsAt.split("T")[0];
       const endDate = attrs.endsAt.split("T")[0];
 

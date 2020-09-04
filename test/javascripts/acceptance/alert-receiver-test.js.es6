@@ -11,7 +11,7 @@ function alertData(status, datacenter, id) {
     external_url: "http://alertmanager.example.com",
     graph_url:
       "https://metrics.sjc1.discourse.cloud/graph?g0.expr=mymetric&g0.tab=1",
-    logs_url: "http://kibana.example.com/app/kibana"
+    logs_url: "http://kibana.example.com/app/kibana",
   };
 
   if (status === "resolved") {
@@ -33,16 +33,16 @@ acceptance("Alert Receiver", {
       alertData("suppressed", "sjc1", "myalert3"),
       alertData("stale", "sjc1", "myalert4"),
       alertData("firing", "sjc1", "myalert5"),
-      alertData("firing", "sjc2", "myalert6")
+      alertData("firing", "sjc2", "myalert6"),
     ];
 
     server.get("/t/281.json", () => {
       return helper.response(json);
     });
-  }
+  },
 });
 
-QUnit.test("displays all the alerts", async assert => {
+QUnit.test("displays all the alerts", async (assert) => {
   await visit("/t/internationalization-localization/281");
   assert.ok(
     exists(".prometheus-alert-receiver"),
@@ -54,7 +54,7 @@ QUnit.test("displays all the alerts", async assert => {
   );
   assert.deepEqual(
     Array.from(alertNames)
-      .map(e => e.innerText)
+      .map((e) => e.innerText)
       .sort(),
     ["myalert1", "myalert2", "myalert3", "myalert4", "myalert5", "myalert6"],
     "the alerts are all visible"

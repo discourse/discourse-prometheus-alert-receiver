@@ -7,7 +7,7 @@ import { h } from "virtual-dom";
 const STATUS_NAMES = ["firing", "suppressed", "stale", "resolved"];
 const STATUS_EMOJIS = {
   firing: "fire",
-  suppressed: "shushing_face"
+  suppressed: "shushing_face",
 };
 
 const COLLAPSE_THRESHOLD = 30;
@@ -22,7 +22,7 @@ createWidget("alert-receiver-data", {
     const groupedByStatus = {};
     const statusCounts = {};
 
-    attrs.alerts.forEach(a => {
+    attrs.alerts.forEach((a) => {
       if (!groupedByStatus[a.status]) {
         groupedByStatus[a.status] = {};
         statusCounts[a.status] = 0;
@@ -39,7 +39,7 @@ createWidget("alert-receiver-data", {
 
     let collapsed = false;
 
-    STATUS_NAMES.forEach(statusName => {
+    STATUS_NAMES.forEach((statusName) => {
       const groupedByDc = groupedByStatus[statusName];
       if (!groupedByDc) return;
 
@@ -61,7 +61,7 @@ createWidget("alert-receiver-data", {
           alerts: alerts,
           heading: dcName,
           headingLink: alerts[0].external_url,
-          defaultCollapsed: collapsed
+          defaultCollapsed: collapsed,
         });
 
         content.push(table);
@@ -69,7 +69,7 @@ createWidget("alert-receiver-data", {
     });
 
     return content;
-  }
+  },
 });
 
 createWidget("alert-receiver-date", {
@@ -104,7 +104,7 @@ createWidget("alert-receiver-date", {
     if ($().applyLocalDates) $(dateElement).applyLocalDates();
 
     return new RawHtml({ html: dateElement.outerHTML });
-  }
+  },
 });
 
 createWidget("alert-receiver-date-range", {
@@ -127,13 +127,13 @@ createWidget("alert-receiver-date-range", {
       content.push(
         this.attach("alert-receiver-date", {
           timestamp: attrs.endsAt,
-          hideDate
+          hideDate,
         })
       );
     }
 
     return content;
-  }
+  },
 });
 
 createWidget("alert-receiver-row", {
@@ -143,7 +143,7 @@ createWidget("alert-receiver-row", {
     return {
       logsUrl: this.buildLogsUrl(attrs),
       graphUrl: this.buildGraphUrl(attrs),
-      grafanaUrl: this.buildGrafanaUrl(attrs)
+      grafanaUrl: this.buildGrafanaUrl(attrs),
     };
   },
 
@@ -235,7 +235,7 @@ createWidget("alert-receiver-row", {
         {{/if}}
       </div>
     </td>
-  `
+  `,
 });
 
 createWidget("alert-receiver-external-link", {
@@ -245,7 +245,7 @@ createWidget("alert-receiver-external-link", {
     <a target='_blank' href={{attrs.link}} title={{i18n "prom_alert_receiver.actions.alertmanager"}}>
       {{d-icon 'external-link-alt'}}
     </a>
-  `
+  `,
 });
 
 createWidget("alert-receiver-collapse-toggle", {
@@ -263,7 +263,7 @@ createWidget("alert-receiver-collapse-toggle", {
 
   transform(attrs) {
     return {
-      icon: attrs.collapsed ? "caret-right" : "caret-down"
+      icon: attrs.collapsed ? "caret-right" : "caret-down",
     };
   },
 
@@ -276,23 +276,23 @@ createWidget("alert-receiver-collapse-toggle", {
       ({{attrs.count}})
     </div>
     {{alert-receiver-external-link link=attrs.headingLink}}
-  `
+  `,
 });
 
 createWidget("alert-receiver-table", {
   tagName: "div.alert-receiver-table",
-  buildKey: attrs => `alert-table-${attrs.status}-${attrs.heading}`,
+  buildKey: (attrs) => `alert-table-${attrs.status}-${attrs.heading}`,
 
   buildAttributes(attrs) {
     return {
-      "data-alert-status": attrs.status
+      "data-alert-status": attrs.status,
     };
   },
 
   transform(attrs, state) {
     return {
-      showDescriptionColumn: attrs.alerts.any(a => a.description),
-      collapseToggleIcon: state.collapsed ? "caret-right" : "caret-down"
+      showDescriptionColumn: attrs.alerts.any((a) => a.description),
+      collapseToggleIcon: state.collapsed ? "caret-right" : "caret-down",
     };
   },
 
@@ -318,5 +318,5 @@ createWidget("alert-receiver-table", {
 
   toggleCollapse() {
     this.state.collapsed = !this.state.collapsed;
-  }
+  },
 });

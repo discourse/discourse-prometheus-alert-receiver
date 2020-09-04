@@ -5,7 +5,7 @@ export default {
   name: "discourse-prometheus-alert-receiver",
 
   initialize() {
-    withPluginApi("0.8.9", api => {
+    withPluginApi("0.8.9", (api) => {
       const messageBus = api.container.lookup("message-bus:main");
       if (!messageBus) {
         return;
@@ -13,16 +13,16 @@ export default {
 
       const site = api.container.lookup("site:main");
 
-      messageBus.subscribe("/alert-receiver", payload => {
+      messageBus.subscribe("/alert-receiver", (payload) => {
         site.set("firing_alerts_count", payload.firing_alerts_count);
       });
 
-      api.decorateWidget("post-contents:after-cooked", dec => {
+      api.decorateWidget("post-contents:after-cooked", (dec) => {
         if (dec.attrs.post_number === 1) {
           const postModel = dec.getModel();
           if (postModel && postModel.topic.alert_data) {
             return dec.attach("alert-receiver-data", {
-              alerts: postModel.topic.alert_data
+              alerts: postModel.topic.alert_data,
             });
           }
         }
@@ -33,7 +33,7 @@ export default {
         _alertDataChanged() {
           if (this.model && this.model.alert_data && this.model.postStream) {
             this.appEvents.trigger("post-stream:refresh", {
-              id: this.model.postStream.firstPostId
+              id: this.model.postStream.firstPostId,
             });
           }
         },
@@ -51,8 +51,8 @@ export default {
         willDestroy() {
           this._super(...arguments);
           this.appEvents.off("alerts:quote-alert", this, "_quoteAlert");
-        }
+        },
       });
     });
-  }
+  },
 };

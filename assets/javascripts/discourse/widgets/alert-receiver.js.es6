@@ -41,7 +41,9 @@ createWidget("alert-receiver-data", {
 
     STATUS_NAMES.forEach((statusName) => {
       const groupedByDc = groupedByStatus[statusName];
-      if (!groupedByDc) return;
+      if (!groupedByDc) {
+        return;
+      }
 
       const headerContent = [];
       if (STATUS_EMOJIS[statusName]) {
@@ -53,7 +55,9 @@ createWidget("alert-receiver-data", {
       headerContent.push(I18n.t(`prom_alert_receiver.headers.${statusName}`));
       content.push(h("h2", {}, headerContent));
 
-      if (statusCounts[statusName] > COLLAPSE_THRESHOLD) collapsed = true;
+      if (statusCounts[statusName] > COLLAPSE_THRESHOLD) {
+        collapsed = true;
+      }
 
       Object.entries(groupedByDc).forEach(([dcName, alerts]) => {
         const table = this.attach("alert-receiver-table", {
@@ -75,10 +79,14 @@ createWidget("alert-receiver-data", {
 createWidget("alert-receiver-date", {
   tagName: "span.alert-receiver-date",
   html(attrs) {
-    if (!attrs.timestamp) return;
+    if (!attrs.timestamp) {
+      return;
+    }
 
     const splitTimestamp = attrs.timestamp.split("T");
-    if (!splitTimestamp.length === 2) return;
+    if (!splitTimestamp.length === 2) {
+      return;
+    }
 
     const date = splitTimestamp[0];
     const time = splitTimestamp[1];
@@ -101,7 +109,9 @@ createWidget("alert-receiver-date", {
 
     dateElement.textContent = attrs.timestamp;
 
-    if ($().applyLocalDates) $(dateElement).applyLocalDates();
+    if ($().applyLocalDates) {
+      $(dateElement).applyLocalDates();
+    }
 
     return new RawHtml({ html: dateElement.outerHTML });
   },
@@ -111,7 +121,9 @@ createWidget("alert-receiver-date-range", {
   tagName: "span",
   html(attrs) {
     const content = [];
-    if (!attrs.startsAt) return;
+    if (!attrs.startsAt) {
+      return;
+    }
 
     content.push(
       this.attach("alert-receiver-date", { timestamp: attrs.startsAt })
@@ -149,7 +161,9 @@ createWidget("alert-receiver-row", {
 
   buildLogsUrl(attrs) {
     const base = attrs.alert.logs_url;
-    if (!base) return;
+    if (!base) {
+      return;
+    }
     const start = attrs.alert.starts_at;
     const end = attrs.alert.ends_at || new Date().toISOString();
     return `${base}#/discover?_g=(time:(from:'${start}',mode:absolute,to:'${end}'))`;
@@ -157,7 +171,9 @@ createWidget("alert-receiver-row", {
 
   buildGraphUrl(attrs) {
     const base = attrs.alert.graph_url;
-    if (!base) return;
+    if (!base) {
+      return;
+    }
     const url = new URL(base);
 
     const start = new Date(attrs.alert.starts_at);
@@ -178,7 +194,9 @@ createWidget("alert-receiver-row", {
 
   buildGrafanaUrl(attrs) {
     const base = attrs.alert.grafana_url;
-    if (!base) return;
+    if (!base) {
+      return;
+    }
     const url = new URL(base);
 
     const start = new Date(attrs.alert.starts_at);
@@ -201,7 +219,9 @@ createWidget("alert-receiver-row", {
       val.starts_at.split("T")[1]
     } displayedTimezone=UTC format="YYYY-MM-DD HH:mm"]`;
 
-    if (val.description) alertString += ` - ${val.description}`;
+    if (val.description) {
+      alertString += ` - ${val.description}`;
+    }
 
     this.appEvents.trigger("alerts:quote-alert", alertString);
   },
@@ -253,7 +273,9 @@ createWidget("alert-receiver-collapse-toggle", {
 
   buildClasses(attrs) {
     let classString = "alert-receiver-collapse-toggle";
-    if (attrs.collapsed) classString += " collapsed";
+    if (attrs.collapsed) {
+      classString += " collapsed";
+    }
     return classString;
   },
 

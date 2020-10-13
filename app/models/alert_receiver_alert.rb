@@ -83,8 +83,10 @@ class AlertReceiverAlert < ActiveRecord::Base
         VALUES #{values_string}
       ),
       stale_alerts AS (
-        SELECT id FROM alert_receiver_alerts db_alerts
-        WHERE NOT EXISTS (
+        SELECT db_alerts.id FROM alert_receiver_alerts db_alerts
+        JOIN topics t ON t.id = db_alerts.topic_id
+        WHERE NOT t.closed
+        AND NOT EXISTS (
           SELECT 1 FROM active_alerts
           WHERE db_alerts.topic_id = active_alerts.topic_id::integer
             AND db_alerts.identifier = active_alerts.identifier
@@ -113,6 +115,11 @@ class AlertReceiverAlert < ActiveRecord::Base
 
   def self.update_alerts(alerts, mark_stale_external_url: nil)
     alerts = alerts.uniq { |a| [a[:topic_id], a[:external_url], a[:identifier]] }
+
+    # Never update alert data for closed topics
+    all_topic_ids = alerts.map { |a| a[:topic_id] }.uniq
+    open_topic_ids = Topic.where(id: all_topic_ids).where("not closed").pluck(:id).to_set
+    alerts = alerts.filter { |a| open_topic_ids.include?(a[:topic_id]) }
 
     groups = alerts.group_by { |a| a[:status] }
 

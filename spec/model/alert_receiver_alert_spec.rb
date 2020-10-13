@@ -125,4 +125,26 @@ RSpec.describe 'alert_receiver_alert' do
     expect(AlertReceiverAlert.count).to eq(2)
     expect(AlertReceiverAlert.firing.count).to eq(2)
   end
+
+  it "never updates status in closed topics" do
+    AlertReceiverAlert.update_alerts([
+      alert(identifier: 'myid1'),
+      alert(identifier: 'myid2'),
+      alert(identifier: 'myid3')
+    ])
+
+    expect(AlertReceiverAlert.count).to eq(3)
+    expect(AlertReceiverAlert.firing.count).to eq(3)
+
+    topic1.update!(closed: true)
+
+    AlertReceiverAlert.update_alerts([
+      alert(identifier: 'myid1', status: "resolved"),
+      alert(identifier: 'myid2', status: "suppressed"),
+      # myid3 stale
+    ])
+
+    expect(AlertReceiverAlert.count).to eq(3)
+    expect(AlertReceiverAlert.firing.count).to eq(3)
+  end
 end

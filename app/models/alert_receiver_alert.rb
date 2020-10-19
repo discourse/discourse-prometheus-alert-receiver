@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 class AlertReceiverAlert < ActiveRecord::Base
+  self.ignored_columns = [
+    "grafana_url", "logs_url", "graph_url" # TODO: drop columns and remove from ignored list
+  ]
+
   STALE_DURATION = 5.minutes
 
   belongs_to :topic
@@ -133,3 +137,26 @@ class AlertReceiverAlert < ActiveRecord::Base
     topic_ids.uniq
   end
 end
+
+# == Schema Information
+#
+# Table name: alert_receiver_alerts
+#
+#  id            :bigint           not null, primary key
+#  topic_id      :integer          not null
+#  status        :string           not null
+#  identifier    :string           not null
+#  description   :string
+#  datacenter    :string
+#  starts_at     :datetime         not null
+#  ends_at       :datetime
+#  external_url  :string           not null
+#  link_url      :string
+#  link_text     :string
+#  generator_url :string
+#
+# Indexes
+#
+#  index_alert_receiver_alerts_on_topic_id    (topic_id)
+#  index_alert_receiver_alerts_unique_active  (topic_id,external_url,identifier) UNIQUE WHERE ((status)::text = ANY ((ARRAY['firing'::character varying, 'suppressed'::character varying])::text[]))
+#

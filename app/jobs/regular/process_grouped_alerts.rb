@@ -17,9 +17,11 @@ module Jobs
         token
       )
 
-      parsed_alerts = parse_alerts(data, **args.symbolize_keys.slice(:logs_url, :grafana_url, :external_url))
+      external_url = args.symbolize_keys[:external_url]
 
-      update_open_alerts(receiver, parsed_alerts, **args.symbolize_keys.slice(:external_url))
+      parsed_alerts = parse_alerts(data, external_url: external_url)
+
+      update_open_alerts(receiver, parsed_alerts, external_url: external_url)
     end
 
     private

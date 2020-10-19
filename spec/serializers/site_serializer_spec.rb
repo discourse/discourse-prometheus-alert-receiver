@@ -24,7 +24,7 @@ RSpec.describe SiteSerializer do
         topic.alert_receiver_alerts.create!(
               identifier: 'somethingfunny',
               starts_at: "2020-01-02T03:04:05.12345678Z",
-              graph_url: "http://alerts.example.com/graph?g0.expr=lolrus",
+              generator_url: "http://alerts.example.com/graph?g0.expr=lolrus",
               status: status,
               external_url: "alerts.example.com"
         )

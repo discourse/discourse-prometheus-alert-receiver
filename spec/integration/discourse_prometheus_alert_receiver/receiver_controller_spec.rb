@@ -152,7 +152,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             {
               identifier: 'somethingfunny',
               starts_at: "2018-07-24T23:25:31.363742333Z",
-              graph_url: "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
+              generator_url: "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
               status: 'firing',
               datacenter: datacenter,
               external_url: 'http://alerts.example.com'
@@ -160,7 +160,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             {
               identifier: 'somethingnotfunny',
               starts_at: "2018-07-24T23:25:31.363742333Z",
-              graph_url: "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
+              generator_url: "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
               status: 'firing',
               datacenter: datacenter,
               external_url: 'http://alerts.example.com'
@@ -168,7 +168,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             {
               identifier: 'doesnotexists',
               starts_at: "2018-07-24T23:25:31.363742333Z",
-              graph_url: "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
+              generator_url: "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
               status: 'firing',
               datacenter: datacenter,
               external_url: 'http://alerts.example.com'
@@ -309,7 +309,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             topic2.alert_receiver_alerts.create!(
               identifier: 'somethingfunny',
               starts_at: "2018-07-24T23:25:31.363742333Z",
-              graph_url: "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
+              generator_url: "http://supposed.to.be.a.url/graph?g0.expr=lolrus",
               status: 'firing',
               datacenter: datacenter,
               external_url: 'http://alerts.example.com'
@@ -398,7 +398,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
       let(:response_sla) { '4hours' }
       let(:external_url) { "supposed.to.be.a.url" }
-      let(:logs_url) { "https://logs.example.com/path" }
 
       let!(:assignee) do
         Fabricate(:user).tap do |u|
@@ -494,7 +493,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           a = topic.alert_receiver_alerts.first
           expect(a.identifier).to eq("somethingfunny")
           expect(a.starts_at).to eq_time(DateTime.parse("2020-01-02T03:04:05.12345678Z"))
-          expect(a.graph_url).to eq("http://alerts.example.com/graph?g0.expr=lolrus")
+          expect(a.generator_url).to eq("http://alerts.example.com/graph?g0.expr=lolrus")
           expect(a.status).to eq('firing')
           expect(a.description).to eq('some description')
           expect(a.datacenter).to eq(datacenter)
@@ -562,9 +561,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           topic.alert_receiver_alerts.create!(
             identifier: 'somethingfunny',
             starts_at: "2020-01-02T03:04:05.12345678Z",
-            graph_url: "http://alerts.example.com/graph?g0.expr=lolrus",
-            logs_url: "http://logs.example.com/app",
-            grafana_url: "http://graphs.example.com/d/xyzabcefg",
+            generator_url: "http://alerts.example.com/graph?g0.expr=lolrus",
+            link_url: "http://logs.example.com/app",
             status: 'firing',
             datacenter: datacenter,
             external_url: 'http://alerts.example.com'
@@ -572,9 +570,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           topic.alert_receiver_alerts.create!(
             identifier: 'somethingnotfunny',
             starts_at: "2020-01-02T03:04:05.12345678Z",
-            graph_url: "http://alerts.example.com/graph?g0.expr=lolrus",
-            logs_url: "http://logs.example.com/app",
-            grafana_url: "http://graphs.example.com/d/xyzabcefg",
+            generator_url: "http://alerts.example.com/graph?g0.expr=lolrus",
+            link_url: "http://logs.example.com/app",
             status: 'firing',
             datacenter: datacenter,
             external_url: 'http://alerts.example.com'
@@ -627,7 +624,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           topic.alert_receiver_alerts.create!(
             identifier: 'oldalert',
             starts_at: "2020-01-02T03:04:05.12345678Z",
-            graph_url: "http://alerts.example.com/graph?g0.expr=lolrus",
+            generator_url: "http://alerts.example.com/graph?g0.expr=lolrus",
             status: 'firing',
             datacenter: datacenter,
             external_url: external_url
@@ -777,7 +774,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           topic.alert_receiver_alerts.create!(
             identifier: 'somethingfunny',
             starts_at: "2020-01-02T03:04:05.12345678Z",
-            graph_url: "http://alerts.example.com/graph?g0.expr=lolrus",
+            generator_url: "http://alerts.example.com/graph?g0.expr=lolrus",
             status: 'firing',
             datacenter: datacenter,
             external_url: external_url
@@ -833,7 +830,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           closed_topic.alert_receiver_alerts.create!(
             identifier: 'somethingfunny',
             starts_at: "2020-01-02T03:04:05.12345678Z",
-            graph_url: "http://alerts.example.com/graph?g0.expr=lolrus",
+            generator_url: "http://alerts.example.com/graph?g0.expr=lolrus",
             external_url: external_url,
             status: 'firing'
           )
@@ -905,7 +902,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           topic.alert_receiver_alerts.create!(
             identifier: 'somethingfunny',
             starts_at: "2020-01-02T03:04:05.12345678Z",
-            graph_url: "http://alerts.example.com/graph?g0.expr=lolrus",
+            generator_url: "http://alerts.example.com/graph?g0.expr=lolrus",
             status: "firing",
             datacenter: datacenter,
             external_url: external_url

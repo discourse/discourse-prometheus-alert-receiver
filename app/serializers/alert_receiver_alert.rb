@@ -8,7 +8,7 @@ class AlertReceiverAlertSerializer < ApplicationSerializer
             :starts_at,
             :ends_at,
             :external_url,
-            :graph_url,
-            :logs_url,
-            :grafana_url
+            :generator_url,
+            :link_url,
+            :link_text
 end

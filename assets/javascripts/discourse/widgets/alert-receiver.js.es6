@@ -152,34 +152,87 @@ createWidget("alert-receiver-row", {
   tagName: "tr",
 
   transform(attrs) {
+    const startsAt = attrs.alert.starts_at;
+    const endsAt = attrs.alert.ends_at || new Date().toISOString();
+    const linkText =
+      this.attrs.alert.link_text || I18n.t("prom_alert_receiver.actions.link");
+
     return {
-      logsUrl: this.buildLogsUrl(attrs),
-      graphUrl: this.buildGraphUrl(attrs),
-      grafanaUrl: this.buildGrafanaUrl(attrs),
+      generatorUrl: this.processUrl(
+        attrs.alert.generator_url,
+        startsAt,
+        endsAt
+      ),
+      linkUrl: this.processUrl(attrs.alert.link_url, startsAt, endsAt),
+      linkText,
     };
   },
 
-  buildLogsUrl(attrs) {
-    const base = attrs.alert.logs_url;
-    if (!base) {
-      return;
+  processUrl(urlString, startsAt, endsAt) {
+    try {
+      const url = new URL(urlString);
+
+      return (
+        this.buildPrometheusUrl(url, startsAt, endsAt) ||
+        this.buildGrafanaUrl(url, startsAt, endsAt) ||
+        this.buildKibanaUrl(url, startsAt, endsAt) ||
+        url
+      );
+    } catch (e) {
+      if (e instanceof TypeError) {
+        // Invalid or blank URL
+        return;
+      }
+      throw e;
     }
-    const start = attrs.alert.starts_at;
-    const end = attrs.alert.ends_at || new Date().toISOString();
-    return `${base}#/discover?_g=(time:(from:'${start}',mode:absolute,to:'${end}'))`;
   },
 
-  buildGraphUrl(attrs) {
-    const base = attrs.alert.graph_url;
-    if (!base) {
+  checkMatch(url, regexString) {
+    if (!regexString || !url) {
+      return false;
+    }
+
+    try {
+      const regexp = new RegExp(regexString);
+      return regexp.test(url);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error("Alert receiver regex error", e);
+    }
+
+    return false;
+  },
+
+  buildKibanaUrl(url, startsAt, endsAt) {
+    const regex = this.siteSettings.prometheus_alert_receiver_kibana_regex;
+    if (!this.checkMatch(url, regex)) {
       return;
     }
-    const url = new URL(base);
 
-    const start = new Date(attrs.alert.starts_at);
-    const end = attrs.alert.ends_at
-      ? new Date(attrs.alert.ends_at)
-      : new Date();
+    // Kibana stores its data after the # in the URL
+    // So some custom parsing is required
+    const fragment = url.hash;
+    const parts = fragment.split("?", 2);
+
+    const searchParams = new URLSearchParams(parts[1]);
+    searchParams.set(
+      "_g",
+      `(time:(from:'${startsAt}',mode:absolute,to:'${endsAt}'))`
+    );
+
+    url.hash = `${parts[0]}?${searchParams}`;
+
+    return url.toString();
+  },
+
+  buildPrometheusUrl(url, startsAt, endsAt) {
+    const regex = this.siteSettings.prometheus_alert_receiver_prometheus_regex;
+    if (!this.checkMatch(url, regex)) {
+      return;
+    }
+
+    const start = new Date(startsAt);
+    const end = new Date(endsAt);
 
     // Make the graph window 5 minutes either side of the alert
     const windowDuration = (end - start) / 1000 + 600; // Add 10 minutes
@@ -192,18 +245,14 @@ createWidget("alert-receiver-row", {
     return url.toString();
   },
 
-  buildGrafanaUrl(attrs) {
-    const base = attrs.alert.grafana_url;
-    if (!base) {
+  buildGrafanaUrl(url, startsAt, endsAt) {
+    const regex = this.siteSettings.prometheus_alert_receiver_grafana_regex;
+    if (!this.checkMatch(url, regex)) {
       return;
     }
-    const url = new URL(base);
 
-    const start = new Date(attrs.alert.starts_at);
-
-    const end = attrs.alert.ends_at
-      ? new Date(attrs.alert.ends_at)
-      : new Date();
+    const start = new Date(startsAt);
+    const end = new Date(endsAt);
 
     // Grafana uses milliseconds since epoch
     url.searchParams.set("from", start.getTime());
@@ -227,7 +276,7 @@ createWidget("alert-receiver-row", {
   },
 
   template: hbs`
-    <td><a href={{transformed.graphUrl}}>{{attrs.alert.identifier}}</a></td>
+    <td><a href={{transformed.generatorUrl}}>{{attrs.alert.identifier}}</a></td>
     <td>
       {{alert-receiver-date-range 
           startsAt=attrs.alert.starts_at
@@ -239,20 +288,19 @@ createWidget("alert-receiver-row", {
     {{/if}}
     <td>
       <div>
+        {{#if transformed.linkUrl}}
+          <a class='btn-flat no-text btn-icon' 
+            href={{transformed.linkUrl}}
+            title={{transformed.linkText}}>
+            {{d-icon 'external-link-alt'}}
+          </a>
+        {{/if}}
         {{flat-button 
           action="quoteAlert"
           icon="quote-left"
           actionParam=attrs.alert
           title="prom_alert_receiver.actions.quote"
         }}
-        <a class='btn-flat no-text btn-icon' 
-           href={{transformed.logsUrl}}
-           title={{i18n "prom_alert_receiver.actions.logs"}}>
-           {{d-icon 'far-list-alt'}}
-        </a>
-        {{#if transformed.grafanaUrl}}
-          <a href={{transformed.grafanaUrl}}>{{emoji name='bar_chart'}}</a>
-        {{/if}}
       </div>
     </td>
   `,
@@ -263,7 +311,7 @@ createWidget("alert-receiver-external-link", {
   click() {},
   template: hbs`
     <a target='_blank' href={{attrs.link}} title={{i18n "prom_alert_receiver.actions.alertmanager"}}>
-      {{d-icon 'external-link-alt'}}
+      {{d-icon 'far-list-alt'}}
     </a>
   `,
 });

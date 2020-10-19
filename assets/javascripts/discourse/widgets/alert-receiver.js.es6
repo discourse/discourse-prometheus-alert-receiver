@@ -152,22 +152,18 @@ createWidget("alert-receiver-row", {
   tagName: "tr",
 
   transform(attrs) {
-    const starts_at = attrs.alert.starts_at;
-    const ends_at = attrs.alert.ends_at || new Date().toISOString();
-
-    let linkText = this.attrs.alert.link_text;
-    if (linkText === "") {
-      linkText = null;
-    }
-    linkText = linkText || I18n.t("prom_alert_receiver.actions.link");
+    const startsAt = attrs.alert.starts_at;
+    const endsAt = attrs.alert.ends_at || new Date().toISOString();
+    const linkText =
+      this.attrs.alert.link_text || I18n.t("prom_alert_receiver.actions.link");
 
     return {
       generatorUrl: this.processUrl(
         attrs.alert.generator_url,
-        starts_at,
-        ends_at
+        startsAt,
+        endsAt
       ),
-      linkUrl: this.processUrl(attrs.alert.link_url, starts_at, ends_at),
+      linkUrl: this.processUrl(attrs.alert.link_url, startsAt, endsAt),
       linkText,
     };
   },
@@ -195,9 +191,6 @@ createWidget("alert-receiver-row", {
     if (!regexString || !url) {
       return false;
     }
-    if (regexString === "" || url === "") {
-      return false;
-    }
 
     try {
       const regexp = new RegExp(regexString);
@@ -210,7 +203,7 @@ createWidget("alert-receiver-row", {
     return false;
   },
 
-  buildKibanaUrl(url, starts_at, ends_at) {
+  buildKibanaUrl(url, startsAt, endsAt) {
     const regex = this.siteSettings.prometheus_alert_receiver_kibana_regex;
     if (!this.checkMatch(url, regex)) {
       return;
@@ -221,25 +214,25 @@ createWidget("alert-receiver-row", {
     const fragment = url.hash;
     const parts = fragment.split("?", 2);
 
-    const searchParams = new URLSearchParams(parts[1] || "");
+    const searchParams = new URLSearchParams(parts[1]);
     searchParams.set(
       "_g",
-      `(time:(from:'${starts_at}',mode:absolute,to:'${ends_at}'))`
+      `(time:(from:'${startsAt}',mode:absolute,to:'${endsAt}'))`
     );
 
-    url.hash = `${parts[0]}?${searchParams.toString()}`;
+    url.hash = `${parts[0]}?${searchParams}`;
 
     return url.toString();
   },
 
-  buildPrometheusUrl(url, starts_at, ends_at) {
+  buildPrometheusUrl(url, startsAt, endsAt) {
     const regex = this.siteSettings.prometheus_alert_receiver_prometheus_regex;
     if (!this.checkMatch(url, regex)) {
       return;
     }
 
-    const start = new Date(starts_at);
-    const end = new Date(ends_at);
+    const start = new Date(startsAt);
+    const end = new Date(endsAt);
 
     // Make the graph window 5 minutes either side of the alert
     const windowDuration = (end - start) / 1000 + 600; // Add 10 minutes
@@ -252,14 +245,14 @@ createWidget("alert-receiver-row", {
     return url.toString();
   },
 
-  buildGrafanaUrl(url, starts_at, ends_at) {
+  buildGrafanaUrl(url, startsAt, endsAt) {
     const regex = this.siteSettings.prometheus_alert_receiver_grafana_regex;
     if (!this.checkMatch(url, regex)) {
       return;
     }
 
-    const start = new Date(starts_at);
-    const end = new Date(ends_at);
+    const start = new Date(startsAt);
+    const end = new Date(endsAt);
 
     // Grafana uses milliseconds since epoch
     url.searchParams.set("from", start.getTime());

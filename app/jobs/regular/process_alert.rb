@@ -29,9 +29,6 @@ module Jobs
     def process_alerts(receiver, params)
       new_alerts = parse_alerts(
         params['alerts'],
-        # TODO: find correct way to pass logs & grafana URLs to single alerts
-        logs_url: "#{params["externalURL"].sub("alerts", "logs")}/app/kibana",
-        grafana_url: params["externalURL"].sub("alerts", "graphs"),
         external_url: params["externalURL"]
       )
 

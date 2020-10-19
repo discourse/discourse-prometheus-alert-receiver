@@ -18,7 +18,7 @@ RSpec.describe TopicQuery do
         topic.alert_receiver_alerts.create!(
           identifier: 'somethingfunny',
           starts_at: "2020-01-02T03:04:05.12345678Z",
-          graph_url: "http://graphs.example.com/graph?g0.expr=lolrus",
+          generator_url: "http://graphs.example.com/graph?g0.expr=lolrus",
           external_url: "http://alerts.example.com",
           status: status
         )

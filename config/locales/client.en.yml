@@ -8,7 +8,7 @@ en:
         suppressed: "Silenced"
       actions:
         quote: Quote Alert
-        logs: Open Kibana
+        link: Open Link
         alertmanager: Open Alertmanager
     filters:
       alerts-category:

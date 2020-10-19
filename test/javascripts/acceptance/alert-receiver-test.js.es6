@@ -9,9 +9,10 @@ function alertData(status, datacenter, id) {
     starts_at: "2020-07-27T17:26:49.526234411Z",
     ends_at: null,
     external_url: "http://alertmanager.example.com",
-    graph_url:
+    generator_url:
       "https://metrics.sjc1.discourse.cloud/graph?g0.expr=mymetric&g0.tab=1",
-    logs_url: "http://kibana.example.com/app/kibana",
+    link_url:
+      "https://logs.sjc1.discourse.cloud/app/kibana#/discover?_g=()&_a=(columns:!(),filters:!((query:(match:(moby.name:(query:mycontainer,type:phrase))))))",
   };
 
   if (status === "resolved") {
@@ -24,6 +25,10 @@ function alertData(status, datacenter, id) {
 acceptance("Alert Receiver", {
   loggedIn: true,
   mobileView: true,
+  settings: {
+    prometheus_alert_receiver_kibana_regex: "\\/app\\/kibana",
+    prometheus_alert_receiver_prometheus_regex: "\\/graph\\?g0\\.expr=",
+  },
   pretend(server, helper) {
     const json = Object.assign({}, Fixtures["/t/280/1.json"]);
 
@@ -74,11 +79,20 @@ QUnit.test("displays all the alerts", async (assert) => {
     "links each alert to its graph, with added timestamp"
   );
 
-  assert.equal(
+  const renderedHref = new URL(
     find(
       ".prometheus-alert-receiver [data-alert-status='resolved'] table tr td:last-child a"
-    ).attr("href"),
-    "http://kibana.example.com/app/kibana#/discover?_g=(time:(from:'2020-07-27T17:26:49.526234411Z',mode:absolute,to:'2020-07-27T17:35:35.870002386Z'))",
+    ).attr("href")
+  );
+  const expectedHref = new URL(
+    "https://logs.sjc1.discourse.cloud/app/kibana#/discover?_g=(time:(from:'2020-07-27T17:26:49.526234411Z',mode:absolute,to:'2020-07-27T17:35:35.870002386Z'))&_a=(columns:!(),filters:!((query:(match:(moby.name:(query:mycontainer,type:phrase))))))"
+  );
+
+  renderedHref.hash = decodeURIComponent(renderedHref.hash);
+
+  assert.equal(
+    renderedHref.toString(),
+    expectedHref.toString(),
     "adds a log link, with correct timestamps"
   );
 });

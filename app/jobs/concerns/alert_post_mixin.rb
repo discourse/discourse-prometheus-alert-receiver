@@ -15,7 +15,7 @@ module AlertPostMixin
 
   private
 
-  def parse_alerts(raw_alerts, external_url:, logs_url: nil, grafana_url: nil)
+  def parse_alerts(raw_alerts, external_url:)
     raw_alerts.map do |raw_alert|
       alert = {
         external_url: external_url,
@@ -25,14 +25,11 @@ module AlertPostMixin
         status: normalize_status(raw_alert['status']),
         starts_at: raw_alert['startsAt'],
         ends_at: raw_alert['status'] == 'firing' ? nil : raw_alert['endsAt'],
-        graph_url: raw_alert['generatorURL'],
+        generator_url: raw_alert['generatorURL'],
         description: raw_alert.dig('annotations', 'description'),
-        logs_url: logs_url
+        link_url: raw_alert.dig('annotations', 'link_url'),
+        link_text: raw_alert.dig('annotations', 'link_text')
       }
-
-      if dashboard_path = raw_alert.dig('annotations', 'grafana_dashboard_path')
-        alert[:grafana_url] = "#{grafana_url}#{dashboard_path}"
-      end
 
       alert[:ends_at] = nil if alert[:status] != 'resolved'
 

@@ -6,3 +6,12 @@ plugins:
     list_type: compact
   prometheus_alert_receiver_enable_assign: true
   prometheus_alert_receiver_debug_enabled: false
+  prometheus_alert_receiver_grafana_regex:
+    default: ''
+    client: true
+  prometheus_alert_receiver_kibana_regex:
+    default: '\/app\/kibana'
+    client: true
+  prometheus_alert_receiver_prometheus_regex:
+    default: '\/graph\?g0\.expr='
+    client: true

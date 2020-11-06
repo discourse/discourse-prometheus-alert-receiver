@@ -72,7 +72,7 @@ module AlertPostMixin
     output
   end
 
-  def revise_topic(topic:, high_priority: false)
+  def revise_topic(topic:, ensure_tags: [])
     firing_count = topic.alert_receiver_alerts.firing.count
     firing = firing_count > 0
 
@@ -89,13 +89,10 @@ module AlertPostMixin
     datacenters = topic.alert_receiver_alerts.distinct.pluck(:datacenter).compact
 
     existing_tags = topic.tags.pluck(:name)
-    new_tags = existing_tags
-
-    new_tags.concat(datacenters)
-    new_tags << HIGH_PRIORITY_TAG.dup if high_priority
+    new_tags = existing_tags | ensure_tags | datacenters
 
     if firing
-      new_tags << FIRING_TAG.dup
+      new_tags << FIRING_TAG
     else
       new_tags.delete(FIRING_TAG)
     end

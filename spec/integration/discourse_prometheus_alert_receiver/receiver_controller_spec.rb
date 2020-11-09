@@ -556,6 +556,25 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
       end
 
+      context "an alert with topic_tags" do
+        let(:topic) { Fabricate(:post).topic }
+        let(:topic_map) { { alert_name => topic.id } }
+
+        before do
+          payload["commonAnnotations"]["topic_tags"] = "tag1,tag2"
+        end
+
+        it "should update the topic" do
+          freeze_time Time.now.utc
+
+          expect do
+            post "/prometheus/receiver/#{token}", params: payload
+          end.to change { AlertReceiverAlert.count }.by(1)
+
+          expect(topic.tags.pluck(:name)).to include('tag1', 'tag2')
+        end
+      end
+
       context "a resolving alert for a closed alert" do
         before do
           topic.alert_receiver_alerts.create!(

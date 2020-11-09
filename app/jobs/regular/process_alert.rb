@@ -46,7 +46,7 @@ module Jobs
         topic.custom_fields[BASE_TITLE] = title_from_params(params)
         topic.save_custom_fields if !topic.custom_fields_clean?
 
-        revise_topic(topic: topic, high_priority: high_priority?(params))
+        revise_topic(topic: topic, ensure_tags: tags_from_params(params))
       elsif params["status"] == "resolved"
         # We don't care about resolved alerts if we've closed the topic
         return
@@ -68,18 +68,24 @@ module Jobs
       params["commonLabels"]["response_sla"] != NEXT_BUSINESS_DAY_SLA
     end
 
+    def tags_from_params(params)
+      tags = []
+      tags << HIGH_PRIORITY_TAG if high_priority?(params)
+      tags += Array(params["commonLabels"]['datacenter'])
+      tags += Array(params["commonAnnotations"]['topic_tags']&.split(','))
+      tags
+    end
+
     def create_new_topic(receiver, params, new_alerts)
       base_title = title_from_params(params)
 
       firing_count = new_alerts.filter { |a| a[:status] == 'firing' }.count
       topic_title = generate_title(base_title, firing_count)
 
-      datacenter = params["commonLabels"]["datacenter"]
       topic_body = params["commonAnnotations"]["topic_body"]
 
-      tags = [datacenter]
+      tags = tags_from_params(params)
       tags << FIRING_TAG.dup if firing_count > 0
-      tags << HIGH_PRIORITY_TAG.dup if high_priority?(params)
 
       PostCreator.create!(Discourse.system_user,
         raw: first_post_body(

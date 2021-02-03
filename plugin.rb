@@ -105,7 +105,7 @@ after_initialize do
   end
 
   add_to_serializer(:topic_view, :include_alert_data?) do
-    alert_data.present?
+    object.topic.alert_receiver_alerts.present?
   end
 
   on(:after_extract_linked_users) do |users, post|

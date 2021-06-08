@@ -4,7 +4,16 @@ require 'rails_helper'
 
 RSpec.describe TopicQuery do
   let(:user) { Fabricate(:user) }
-  let(:category) { Fabricate(:category, name: 'alerts') }
+
+  fab!(:category) { Fabricate(:category, name: 'alerts') }
+
+  fab!(:plugin_store_row) do
+    PluginStore.set(
+      ::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
+      'sometoken',
+      { category_id: category.id }
+    )
+  end
 
   describe '#list_latest' do
     it 'should return the right topics' do
@@ -29,7 +38,7 @@ RSpec.describe TopicQuery do
         category: category.slug
       )
 
-      expect(topic_query.list_latest.topics).to eq([topic1])
+      expect(topic_query.list_latest.topics).to contain_exactly(topic1)
     end
   end
 end

@@ -93,10 +93,13 @@ after_initialize do
       .where("not topics.closed AND topics.category_id IN (?)", alerts_category_ids_cache)
   end
 
-  add_class_method(:topic, :firing_alerts) do
+  add_class_method(:topic, :firing_alerts) do |category_ids = []|
     joins(:alert_receiver_alerts)
       .where("alert_receiver_alerts.status": 'firing')
-      .where("not topics.closed AND topics.category_id IN (?)", alerts_category_ids_cache)
+      .where(
+        "not topics.closed AND topics.category_id IN (?)",
+        category_ids.present? ? category_ids : alerts_category_ids_cache
+      )
   end
 
   add_to_class(:user, :include_alert_counts?) do
@@ -141,10 +144,9 @@ after_initialize do
   ) do |results, topic_query|
 
     options = topic_query.options
-    category_id = Category.where(slug: 'alerts').pluck(:id).first # TODO: don't hardcode the category slug
 
-    if options[:category_id] == category_id && options[:status] == 'firing'
-      results = results.firing_alerts
+    if Topic.alerts_category_ids_cache.include?(options[:category_id]) && options[:status] == 'firing'
+      results = results.firing_alerts([options[:category_id]])
     end
 
     results

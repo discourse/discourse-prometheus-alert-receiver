@@ -30,6 +30,7 @@ after_initialize do
     '../app/jobs/concerns/alert_post_mixin.rb',
     '../app/jobs/regular/process_alert.rb',
     '../app/jobs/regular/process_grouped_alerts.rb',
+    '../app/jobs/regular/create_alert_topics_index.rb',
   ].each { |path| load File.expand_path(path, __FILE__) }
 
   unless Rails.env.test?
@@ -66,15 +67,36 @@ after_initialize do
     Topic.has_many :alert_receiver_alerts, dependent: :delete_all
   end
 
+  self.add_model_callback('PluginStoreRow', :after_commit) do
+    if self.plugin_name == ::DiscoursePrometheusAlertReceiver::PLUGIN_NAME
+      Topic.clear_alerts_category_ids_cache
+    end
+  end
+
+  add_class_method(:topic, :clear_alerts_category_ids_cache) do
+    @alerts_category_ids = nil
+    Jobs.enqueue(:create_alert_topics_index)
+  end
+
+  add_class_method(:topic, :alerts_category_ids_cache) do
+    @alerts_category_ids ||= alerts_category_ids
+  end
+
+  add_class_method(:topic, :alerts_category_ids) do
+    category_ids = PluginStoreRow
+      .where(plugin_name: ::DiscoursePrometheusAlertReceiver::PLUGIN_NAME)
+      .pluck("value::json->'category_id'")
+  end
+
   add_class_method(:topic, :open_alerts) do
     joins(:alert_receiver_alerts)
-      .where("not closed")
+      .where("not topics.closed AND topics.category_id IN (?)", alerts_category_ids_cache)
   end
 
   add_class_method(:topic, :firing_alerts) do
     joins(:alert_receiver_alerts)
       .where("alert_receiver_alerts.status": 'firing')
-      .where("not closed")
+      .where("not topics.closed AND topics.category_id IN (?)", alerts_category_ids_cache)
   end
 
   add_to_class(:user, :include_alert_counts?) do

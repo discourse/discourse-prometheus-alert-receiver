@@ -9,11 +9,21 @@ RSpec.describe SiteSerializer do
       SiteSerializer.new(site, root: false, scope: guardian).as_json
     end
 
+    fab!(:category) { Fabricate(:category) }
+
+    fab!(:plugin_store_row) do
+      PluginStore.set(
+        ::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
+        'sometoken',
+        { category_id: category.id }
+      )
+    end
+
     before do
-      topic1 = Fabricate(:post).topic
-      topic2 = Fabricate(:post).topic
-      topic3 = Fabricate(:post).topic
-      topic4 = Fabricate(:post).topic
+      topic1 = Fabricate(:post, topic: Fabricate(:topic, category: category)).topic
+      topic2 = Fabricate(:post, topic: Fabricate(:topic, category: category)).topic
+      topic3 = Fabricate(:post, topic: Fabricate(:topic, category: category)).topic
+      topic4 = Fabricate(:post, topic: Fabricate(:topic, category: category)).topic
       topic4.trash!
 
       {

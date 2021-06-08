@@ -74,16 +74,20 @@ after_initialize do
   end
 
   add_class_method(:topic, :clear_alerts_category_ids_cache) do
-    @alerts_category_ids = nil
+    @alerts_category_ids_cache&.clear
     Jobs.enqueue(:create_alert_topics_index)
   end
 
   add_class_method(:topic, :alerts_category_ids_cache) do
-    @alerts_category_ids ||= alerts_category_ids
+    @alerts_category_ids_cache ||= DistributedCache.new("alerts_category_ids_cache")
+
+    @alerts_category_ids_cache.defer_get_set("alert_category_ids") do
+      alerts_category_ids
+    end
   end
 
   add_class_method(:topic, :alerts_category_ids) do
-    category_ids = PluginStoreRow
+    PluginStoreRow
       .where(plugin_name: ::DiscoursePrometheusAlertReceiver::PLUGIN_NAME)
       .pluck("value::json->'category_id'")
   end

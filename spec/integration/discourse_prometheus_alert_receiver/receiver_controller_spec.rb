@@ -11,7 +11,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
   let(:plugin_name) { DiscoursePrometheusAlertReceiver::PLUGIN_NAME }
 
   before do
-    SiteSetting.assign_allowed_on_groups += "|#{assignee_group.id}"
+    SiteSetting.assign_allowed_on_groups = assignee_group.id.to_s
   end
 
   describe "#generate_receiver_url" do

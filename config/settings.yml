@@ -1,9 +1,5 @@
 plugins:
   prometheus_alert_receiver_enabled: true
-  prometheus_alert_receiver_custom_nav_group:
-    default: ""
-    type: list
-    list_type: compact
   prometheus_alert_receiver_enable_assign: true
   prometheus_alert_receiver_debug_enabled: false
   prometheus_alert_receiver_grafana_regex:

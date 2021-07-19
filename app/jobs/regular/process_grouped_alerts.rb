@@ -41,8 +41,6 @@ module Jobs
             revise_topic(topic: topic) if alertname
           end
         end
-
-      publish_alert_counts
     end
   end
 end

@@ -56,12 +56,6 @@ describe Topic do
     )
   end
 
-  describe ".open_alerts_count" do
-    it "should return the distinct count of open topics containing alerts" do
-      expect(Topic.open_alerts_count).to eq(2)
-    end
-  end
-
   describe ".firing_alerts" do
     it "should return the right topics" do
       expect(Topic.firing_alerts).to contain_exactly(firing_alert.topic)

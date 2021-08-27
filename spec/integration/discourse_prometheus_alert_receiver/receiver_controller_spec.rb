@@ -999,7 +999,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             post "/prometheus/receiver/#{token}", params: payload
           end.to change { Topic.count }.by(1)
 
-          expect(topic.assigned_to_user.id).to eq(bob.id)
+          expect(topic.assigned_to).to eq(bob)
         end
 
         describe 'when prometheus_alert_receiver_enable_assign is false' do
@@ -1012,7 +1012,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               post "/prometheus/receiver/#{token}", params: payload
             end.to change { Topic.count }.by(1)
 
-            expect(topic.assigned_to_user).to eq(nil)
+            expect(topic.assigned_to).to eq(nil)
           end
         end
 
@@ -1031,7 +1031,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               end.to change { Topic.count }.by(1)
 
               expect(response.status).to eq(200)
-              expect(assignee_group.users.include?(topic.assigned_to_user)).to eq(true)
+              expect(assignee_group.users.include?(topic.assigned_to)).to eq(true)
               topic.destroy!
             end
           end

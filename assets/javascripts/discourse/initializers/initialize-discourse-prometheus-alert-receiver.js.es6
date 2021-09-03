@@ -29,6 +29,7 @@ export default {
       });
 
       api.modifyClass("controller:topic", {
+        pluginId: "discourse-prometheus-alert-receiver",
         @observes("model.alert_data")
         _alertDataChanged() {
           if (this.model && this.model.alert_data && this.model.postStream) {

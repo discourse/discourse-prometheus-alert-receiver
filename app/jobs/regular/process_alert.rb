@@ -137,7 +137,7 @@ module Jobs
       return unless SiteSetting.prometheus_alert_receiver_enable_assign
 
       if assignee
-        TopicAssigner.new(topic, Discourse.system_user).assign(assignee)
+        Assigner.new(topic, Discourse.system_user).assign(assignee)
       end
     end
   end

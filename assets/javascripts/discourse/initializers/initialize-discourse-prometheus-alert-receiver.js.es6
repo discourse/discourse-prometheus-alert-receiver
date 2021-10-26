@@ -34,13 +34,13 @@ export default {
         _alertDataChanged() {
           if (this.model && this.model.alert_data && this.model.postStream) {
             this.appEvents.trigger("post-stream:refresh", {
-              id: this.model.postStream.firstPostId,
+              id: this.model.postStream.stream[0],
             });
           }
         },
 
         _quoteAlert(text) {
-          this.quoteState.selected(this.model.postStream.firstPostId, text, {});
+          this.quoteState.selected(this.model.postStream.stream[0], text, {});
           this.send("selectText");
         },
 

@@ -62,7 +62,7 @@ createWidget("alert-receiver-data", {
       Object.entries(groupedByDc).forEach(([dcName, alerts]) => {
         const table = this.attach("alert-receiver-table", {
           status: statusName,
-          alerts: alerts,
+          alerts,
           heading: dcName,
           headingLink: alerts[0].external_url,
           defaultCollapsed: collapsed,

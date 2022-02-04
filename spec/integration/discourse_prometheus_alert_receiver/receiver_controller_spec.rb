@@ -69,7 +69,8 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(receiver.value).to eq({
             category_id: category.id,
             created_at: Time.zone.now,
-            created_by: admin.id
+            created_by: admin.id,
+            topic_map: {}
           }.to_json)
         end
       end

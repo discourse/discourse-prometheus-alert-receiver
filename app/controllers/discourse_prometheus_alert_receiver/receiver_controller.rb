@@ -25,7 +25,8 @@ module DiscoursePrometheusAlertReceiver
       receiver_data = {
         category_id: category.id,
         created_at: Time.zone.now,
-        created_by: current_user.id
+        created_by: current_user.id,
+        topic_map: {}
       }
 
       if params["assignee_group_id"]
@@ -33,7 +34,6 @@ module DiscoursePrometheusAlertReceiver
         raise Discourse::InvalidParameters unless group
 
         receiver_data[:assignee_group_id] = group.id
-        receiver_data[:topic_map] = {}
       end
 
       token = SecureRandom.hex(32)

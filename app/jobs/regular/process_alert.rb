@@ -64,13 +64,8 @@ module Jobs
         "#{params["groupLabels"].to_hash.map { |k, v| "#{k}: #{v}" }.join(", ")}"
     end
 
-    def high_priority?(params)
-      params["commonLabels"]["response_sla"] != NEXT_BUSINESS_DAY_SLA
-    end
-
     def tags_from_params(params)
       tags = []
-      tags << HIGH_PRIORITY_TAG if high_priority?(params)
       tags += Array(params["commonLabels"]['datacenter'])
       tags += Array(params["commonAnnotations"]['topic_tags']&.split(','))
       tags

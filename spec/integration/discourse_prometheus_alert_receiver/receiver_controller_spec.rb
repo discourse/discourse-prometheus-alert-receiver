@@ -479,8 +479,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
           expect(topic.tags.pluck(:name)).to contain_exactly(
             datacenter,
-            AlertPostMixin::FIRING_TAG,
-            AlertPostMixin::HIGH_PRIORITY_TAG
+            AlertPostMixin::FIRING_TAG
           )
 
           expect(topic.title).to eq(
@@ -532,8 +531,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
           expect(topic.tags.pluck(:name)).to contain_exactly(
             datacenter,
-            AlertPostMixin::FIRING_TAG,
-            AlertPostMixin::HIGH_PRIORITY_TAG
+            AlertPostMixin::FIRING_TAG
           )
         end
       end
@@ -692,7 +690,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(topic.tags.pluck(:name)).to contain_exactly(
             datacenter,
             AlertPostMixin::FIRING_TAG,
-            AlertPostMixin::HIGH_PRIORITY_TAG
           )
 
           expect(topic.alert_receiver_alerts.pluck(:identifier, :status)).to contain_exactly(
@@ -774,7 +771,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
               datacenter,
               datacenter2,
               AlertPostMixin::FIRING_TAG,
-              AlertPostMixin::HIGH_PRIORITY_TAG
             )
 
             expect(topic.alert_receiver_alerts.pluck(:identifier, :datacenter, :external_url, :status)).to contain_exactly(
@@ -896,7 +892,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(keyed_topic.tags.pluck(:name)).to contain_exactly(
             datacenter,
             AlertPostMixin::FIRING_TAG,
-            AlertPostMixin::HIGH_PRIORITY_TAG
           )
 
           expect(receiver["topic_map"][alert_name]).to eq(keyed_topic.id)
@@ -958,7 +953,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             )
 
             expect(topic.tags.pluck(:name)).to contain_exactly(
-              datacenter, AlertPostMixin::HIGH_PRIORITY_TAG
+              datacenter
             )
 
             alert = topic.alert_receiver_alerts.first

@@ -4,8 +4,6 @@ module AlertPostMixin
   extend ActiveSupport::Concern
 
   FIRING_TAG = "firing".freeze
-  HIGH_PRIORITY_TAG = "priority-high".freeze
-  NEXT_BUSINESS_DAY_SLA = "nbd".freeze
 
   MAX_BUMP_RATE = 5.minutes
 

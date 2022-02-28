@@ -92,9 +92,9 @@ after_initialize do
       .pluck("value::json->'category_id'")
   end
 
-  add_class_method(:topic, :open_alerts) do
-    joins(:alert_receiver_alerts)
-      .where("not topics.closed AND topics.category_id IN (?)", alerts_category_ids_cache)
+  add_class_method(:topic, :open_alerts_count) do
+    ids = Topic.where(closed: false, category_id: alerts_category_ids_cache).pluck(:id)
+    AlertReceiverAlert.select(:topic_id).where(topic_id: ids).distinct.count
   end
 
   add_class_method(:topic, :firing_alerts) do |category_ids = []|
@@ -118,7 +118,7 @@ after_initialize do
   end
 
   add_to_serializer(:site, :open_alerts_count) do
-    Topic.open_alerts.count
+    Topic.open_alerts_count
   end
 
   add_to_serializer(:site, :include_open_alerts_count?) do

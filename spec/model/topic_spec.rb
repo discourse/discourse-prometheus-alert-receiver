@@ -4,6 +4,7 @@ require 'rails_helper'
 
 describe Topic do
   fab!(:topic) { Fabricate(:topic) }
+  fab!(:topic_2) { Fabricate(:topic) }
   fab!(:category) { topic.category }
   fab!(:closed_topic) { Fabricate(:topic, category: category, closed: true) }
 
@@ -25,6 +26,26 @@ describe Topic do
     )
   end
 
+  fab!(:silenced_alert) do
+    AlertReceiverAlert.create!(
+      topic: topic,
+      status: 'silenced',
+      identifier: 'someidentifier2',
+      starts_at: Time.zone.now,
+      external_url: "someurl"
+    )
+  end
+
+  fab!(:suppresed_alert) do
+    AlertReceiverAlert.create!(
+      topic: topic_2,
+      status: 'suppressed',
+      identifier: 'someidentifier2',
+      starts_at: Time.zone.now,
+      external_url: "someurl"
+    )
+  end
+
   fab!(:closed_alert) do
     AlertReceiverAlert.create!(
       topic: closed_topic,
@@ -35,9 +56,9 @@ describe Topic do
     )
   end
 
-  describe '.open_alerts' do
-    it 'should return the right count' do
-      expect(Topic.open_alerts).to contain_exactly(firing_alert.topic)
+  describe '.open_alerts_count' do
+    it 'should return the distinct count of open topics containing alerts' do
+      expect(Topic.open_alerts_count).to eq(2)
     end
   end
 

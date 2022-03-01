@@ -127,7 +127,7 @@ module AlertPostMixin
   def publish_alert_counts
     MessageBus.publish("/alert-receiver",
       firing_alerts_count: Topic.firing_alerts.count,
-      open_alerts_count: Topic.open_alerts.count
+      open_alerts_count: Topic.open_alerts_count
     )
   end
 end

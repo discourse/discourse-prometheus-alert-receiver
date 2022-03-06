@@ -4,6 +4,7 @@
 # about: Receives a Prometheus webhook and creates a topic in Discourse
 # version: 0.1
 # url: https://github.com/discourse/discourse-prometheus-alert-receiver
+# transpile_js: true
 
 enabled_site_setting :prometheus_alert_receiver_enabled
 

@@ -1,5 +1,6 @@
 import { acceptance, exists } from "discourse/tests/helpers/qunit-helpers";
 import Fixtures from "discourse/tests/fixtures/topic";
+import { visit } from "@ember/test-helpers";
 
 function alertData(status, datacenter, id) {
   const data = {

@@ -1,7 +1,8 @@
 import { acceptance, exists } from "discourse/tests/helpers/qunit-helpers";
-import Fixtures from "discourse/tests/fixtures/topic";
+import topicFixtures from "discourse/tests/fixtures/topic";
 import { visit } from "@ember/test-helpers";
 import { test } from "qunit";
+import { cloneJSON } from "discourse-common/lib/object";
 
 function alertData(status, datacenter, id) {
   const data = {
@@ -33,7 +34,7 @@ acceptance("Alert Receiver", function (needs) {
   });
 
   needs.pretender((server, helper) => {
-    const json = Object.assign({}, Fixtures["/t/280/1.json"]);
+    const json = cloneJSON(topicFixtures["/t/280/1.json"]);
 
     json.alert_data = [
       alertData("resolved", "sjc1", "myalert1"),

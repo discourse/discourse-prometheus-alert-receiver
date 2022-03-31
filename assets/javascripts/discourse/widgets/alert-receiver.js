@@ -3,6 +3,7 @@ import { createWidget } from "discourse/widgets/widget";
 import hbs from "discourse/widgets/hbs-compiler";
 import RawHtml from "discourse/widgets/raw-html";
 import { h } from "virtual-dom";
+import { applyLocalDates } from "discourse/lib/local-dates";
 
 const STATUS_NAMES = ["firing", "suppressed", "stale", "resolved"];
 const STATUS_EMOJIS = {
@@ -108,10 +109,7 @@ createWidget("alert-receiver-date", {
     data.timezone = "UTC";
 
     dateElement.textContent = attrs.timestamp;
-
-    if ($().applyLocalDates) {
-      $(dateElement).applyLocalDates();
-    }
+    applyLocalDates([dateElement], this.siteSettings);
 
     return new RawHtml({ html: dateElement.outerHTML });
   },
@@ -278,7 +276,7 @@ createWidget("alert-receiver-row", {
   template: hbs`
     <td><a href={{transformed.generatorUrl}}>{{attrs.alert.identifier}}</a></td>
     <td>
-      {{alert-receiver-date-range 
+      {{alert-receiver-date-range
           startsAt=attrs.alert.starts_at
           endsAt=attrs.alert.ends_at
         }}
@@ -289,13 +287,13 @@ createWidget("alert-receiver-row", {
     <td>
       <div>
         {{#if transformed.linkUrl}}
-          <a class='btn-flat no-text btn-icon' 
+          <a class='btn-flat no-text btn-icon'
             href={{transformed.linkUrl}}
             title={{transformed.linkText}}>
             {{d-icon 'external-link-alt'}}
           </a>
         {{/if}}
-        {{flat-button 
+        {{flat-button
           action="quoteAlert"
           icon="quote-left"
           actionParam=attrs.alert
@@ -340,7 +338,7 @@ createWidget("alert-receiver-collapse-toggle", {
   template: hbs`
     <div class='collapse-icon'>
       <a>{{d-icon this.transformed.icon}}</a>
-    </div> 
+    </div>
     <div class='heading'>
       {{attrs.heading}}
       ({{attrs.count}})
@@ -376,7 +374,7 @@ createWidget("alert-receiver-table", {
     {{#unless state.collapsed}}
       <div class='alert-table-wrapper'>
         <table class="prom-alerts-table">
-          <tbody>        
+          <tbody>
             {{#each attrs.alerts as |alert|}}
               {{alert-receiver-row alert=alert showDescription=this.transformed.showDescriptionColumn}}
             {{/each}}

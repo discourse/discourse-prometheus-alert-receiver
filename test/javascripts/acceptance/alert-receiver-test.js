@@ -31,6 +31,7 @@ acceptance("Alert Receiver", function (needs) {
   needs.settings({
     prometheus_alert_receiver_kibana_regex: "\\/app\\/kibana",
     prometheus_alert_receiver_prometheus_regex: "\\/graph\\?g0\\.expr=",
+    discourse_local_dates_enabled: true,
   });
 
   needs.pretender((server, helper) => {
@@ -98,5 +99,7 @@ acceptance("Alert Receiver", function (needs) {
       expectedHref.toString(),
       "adds a log link, with correct timestamps"
     );
+
+    assert.ok(exists(".discourse-local-date"), "dates are output");
   });
 });

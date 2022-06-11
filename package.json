@@ -1,7 +1,10 @@
 {
+  "name": "discourse-prometheus-alert-receiver",
+  "version": "0.1.0",
+  "repository": "https://github.com/discourse/discourse-prometheus-alert-receiver",
   "author": "Discourse",
   "license": "MIT",
   "devDependencies": {
-    "eslint-config-discourse": "^2.0.0"
+    "eslint-config-discourse": "^3.1.0"
   }
 }

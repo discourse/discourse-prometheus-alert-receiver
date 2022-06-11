@@ -8,8 +8,7 @@ en:
     prometheus_alert_receiver_kibana_regex: "Regex to detect kibana URLs in the alert's generator_url or the link_url annotation. Blank to disable"
     prometheus_alert_receiver_prometheus_regex: "Regex to detect prometheus URLs in the alert's generator_url or the link_url annotation"
   prom_alert_receiver:
-    topic_title: 
+    topic_title:
       not_firing: "%{base_title}"
       firing: "%{base_title} (%{count} firing)"
       untitled: Untitled alert topic
-      

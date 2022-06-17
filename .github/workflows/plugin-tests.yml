@@ -42,6 +42,13 @@ jobs:
           path: plugins/${{ github.event.repository.name }}
           fetch-depth: 1
 
+      - name: Install discourse-assign
+        uses: actions/checkout@v3
+        with:
+          repository: discourse/discourse-assign
+          path: plugins/discourse-assign
+          fetch-depth: 1
+
       - name: Setup Git
         run: |
           git config --global user.email "ci@ci.invalid"

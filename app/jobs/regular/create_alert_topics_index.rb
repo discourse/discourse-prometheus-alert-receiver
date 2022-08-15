@@ -6,7 +6,7 @@ module Jobs
 
     def execute(_)
       DB.exec(<<~SQL)
-      DROP INDEX IF EXISTS #{ALERT_TOPICS_INDEX_NAME};
+      DROP INDEX #{Rails.env.test? ? '' : 'CONCURRENTLY'} IF EXISTS #{ALERT_TOPICS_INDEX_NAME};
       SQL
 
       if (category_ids = Topic.alerts_category_ids).present?

@@ -120,7 +120,7 @@ module AlertPostMixin
     else
       # The topic hasn't changed
       # The alert data has changed, so notify clients to reload
-      topic.first_post.publish_change_to_clients(:revised, reload_topic: true)
+      topic.first_post.publish_change_to_clients!(:revised, reload_topic: true)
     end
   end
 

@@ -457,7 +457,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         )
       end
 
-      context "a firing alert on a previously unseen groupKey" do
+      context "with a firing alert on a previously unseen groupKey" do
         let(:topic_map) { {} }
 
         let(:topic) do
@@ -507,7 +507,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
       end
 
-      context "an alert with no annotations" do
+      context "with an alert with no annotations" do
         let(:topic_map) { {} }
 
         let(:topic) do
@@ -536,7 +536,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
       end
 
-      context "an alert with no identifier" do
+      context "with an alert with no identifier" do
         let(:topic) { Fabricate(:post).topic }
         let(:topic_map) { { alert_name => topic.id } }
 
@@ -555,7 +555,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
       end
 
-      context "an alert with topic_tags" do
+      context "with an alert with topic_tags" do
         let(:topic) { Fabricate(:post).topic }
         let(:topic_map) { { alert_name => topic.id } }
 
@@ -574,7 +574,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
       end
 
-      context "a resolving alert for a closed alert" do
+      context "with a resolving alert for a closed alert" do
         before do
           topic.alert_receiver_alerts.create!(
             identifier: 'somethingfunny',
@@ -634,7 +634,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
       end
 
-      context "a new firing alert for an existing alert" do
+      context "with a new firing alert for an existing alert" do
         let(:topic_map) { { alert_name => topic.id } }
         let(:topic) { Fabricate(:post).topic }
 
@@ -782,7 +782,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
       end
 
-      context "a repeated alert" do
+      context "with a repeated alert" do
         let(:topic) { Fabricate(:post, raw: 'unchangeable').topic }
         let(:topic_map) { { alert_name => topic.id } }
 
@@ -837,7 +837,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
       end
 
-      context "firing alert for a groupkey referencing a closed topic" do
+      context "with a firing alert for a groupkey referencing a closed topic" do
         before do
           closed_topic.update!(
             created_at: DateTime.new(2018, 7, 27, 19, 33, 44)
@@ -908,7 +908,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
       end
 
-      context "resolved alert for an alert" do
+      context "with a resolved alert for an alert" do
         let(:first_post) { Fabricate(:post, raw: 'unchanged') }
         let(:topic) { first_post.topic }
         let(:topic_map) { { alert_name => topic.id } }
@@ -977,7 +977,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         end
       end
 
-      context "firing alert with a designated assignee" do
+      context "with a firing alert with a designated assignee" do
         let(:topic_map) { {} }
         let!(:bob) { Fabricate(:user, username: "bobtheangryflower") }
 

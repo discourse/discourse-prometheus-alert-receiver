@@ -11,10 +11,7 @@ module Jobs
       params = args[:params]
 
       DistributedMutex.synchronize("prom-alert-#{@token}") do
-        receiver = PluginStore.get(
-          ::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
-          @token
-        )
+        receiver = PluginStore.get(::DiscoursePrometheusAlertReceiver::PLUGIN_NAME, @token)
 
         process_alerts(receiver, params)
       end
@@ -27,15 +24,9 @@ module Jobs
     end
 
     def process_alerts(receiver, params)
-      new_alerts = parse_alerts(
-        params['alerts'],
-        external_url: params["externalURL"]
-      )
+      new_alerts = parse_alerts(params["alerts"], external_url: params["externalURL"])
 
-      topic = Topic.find_by(
-        id: receiver[:topic_map][group_key(params)],
-        closed: false
-      )
+      topic = Topic.find_by(id: receiver[:topic_map][group_key(params)], closed: false)
 
       if topic
         new_alerts.each { |a| a[:topic_id] = topic.id }
@@ -66,15 +57,15 @@ module Jobs
 
     def tags_from_params(params)
       tags = []
-      tags += Array(params["commonLabels"]['datacenter'])
-      tags += Array(params["commonAnnotations"]['topic_tags']&.split(','))
+      tags += Array(params["commonLabels"]["datacenter"])
+      tags += Array(params["commonAnnotations"]["topic_tags"]&.split(","))
       tags
     end
 
     def create_new_topic(receiver, params, new_alerts)
       base_title = title_from_params(params)
 
-      firing_count = new_alerts.filter { |a| a[:status] == 'firing' }.count
+      firing_count = new_alerts.filter { |a| a[:status] == "firing" }.count
       topic_title = generate_title(base_title, firing_count)
 
       topic_body = params["commonAnnotations"]["topic_body"]
@@ -82,39 +73,42 @@ module Jobs
       tags = tags_from_params(params)
       tags << FIRING_TAG.dup if firing_count > 0
 
-      PostCreator.create!(Discourse.system_user,
-        raw: first_post_body(
-          topic_body: topic_body,
-          prev_topic_id: receiver["topic_map"][group_key(params)]
-        ),
-        category: Category.where(id: receiver[:category_id]).pluck(:id).first,
-        title: topic_title,
-        tags: tags,
-        skip_validations: true
-      ).topic.tap do |t|
-        t.custom_fields[TOPIC_BODY] = topic_body
-        t.custom_fields[BASE_TITLE] = base_title
-        if prev_topic_id = receiver["topic_map"][group_key(params)]
-          t.custom_fields[PREVIOUS_TOPIC] = prev_topic_id
-        end
-
-        t.save_custom_fields
-
-        receiver[:topic_map][group_key(params)] = t.id
-
-        PluginStore.set(::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
-          @token, receiver
+      PostCreator
+        .create!(
+          Discourse.system_user,
+          raw:
+            first_post_body(
+              topic_body: topic_body,
+              prev_topic_id: receiver["topic_map"][group_key(params)],
+            ),
+          category: Category.where(id: receiver[:category_id]).pluck(:id).first,
+          title: topic_title,
+          tags: tags,
+          skip_validations: true,
         )
-
-        assignee =
-          if params["commonAnnotations"]["topic_assignee"]
-            User.find_by(username: params["commonAnnotations"]["topic_assignee"])
-          elsif params["commonAnnotations"]["group_topic_assignee"]
-            random_group_member(params["commonAnnotations"]["group_topic_assignee"])
+        .topic
+        .tap do |t|
+          t.custom_fields[TOPIC_BODY] = topic_body
+          t.custom_fields[BASE_TITLE] = base_title
+          if prev_topic_id = receiver["topic_map"][group_key(params)]
+            t.custom_fields[PREVIOUS_TOPIC] = prev_topic_id
           end
 
-        assign_alert(t, receiver, assignee: assignee)
-      end
+          t.save_custom_fields
+
+          receiver[:topic_map][group_key(params)] = t.id
+
+          PluginStore.set(::DiscoursePrometheusAlertReceiver::PLUGIN_NAME, @token, receiver)
+
+          assignee =
+            if params["commonAnnotations"]["topic_assignee"]
+              User.find_by(username: params["commonAnnotations"]["topic_assignee"])
+            elsif params["commonAnnotations"]["group_topic_assignee"]
+              random_group_member(params["commonAnnotations"]["group_topic_assignee"])
+            end
+
+          assign_alert(t, receiver, assignee: assignee)
+        end
     end
 
     def random_group_member(id_or_name)
@@ -131,9 +125,7 @@ module Jobs
     def assign_alert(topic, receiver, assignee: nil)
       return unless SiteSetting.prometheus_alert_receiver_enable_assign
 
-      if assignee
-        Assigner.new(topic, Discourse.system_user).assign(assignee)
-      end
+      Assigner.new(topic, Discourse.system_user).assign(assignee) if assignee
     end
   end
 end

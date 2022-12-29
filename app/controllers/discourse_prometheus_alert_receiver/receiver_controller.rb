@@ -1,20 +1,16 @@
 # frozen_string_literal: true
 
-require 'time'
-require 'cgi'
+require "time"
+require "cgi"
 
 module DiscoursePrometheusAlertReceiver
   class ReceiverController < ApplicationController
-    requires_plugin 'discourse-prometheus-alert-receiver'
+    requires_plugin "discourse-prometheus-alert-receiver"
 
     skip_before_action :check_xhr,
                        :verify_authenticity_token,
                        :redirect_to_login_if_required,
-                       only: [
-                         :generate_receiver_url,
-                         :receive,
-                         :receive_grouped_alerts
-                       ]
+                       only: %i[generate_receiver_url receive receive_grouped_alerts]
 
     def generate_receiver_url
       params.require(:category_id)
@@ -26,7 +22,8 @@ module DiscoursePrometheusAlertReceiver
         category_id: category.id,
         created_at: Time.zone.now,
         created_by: current_user.id,
-        topic_map: {}
+        topic_map: {
+        },
       }
 
       if params["assignee_group_id"]
@@ -38,9 +35,7 @@ module DiscoursePrometheusAlertReceiver
 
       token = SecureRandom.hex(32)
 
-      PluginStore.set(::DiscoursePrometheusAlertReceiver::PLUGIN_NAME, token,
-        receiver_data
-      )
+      PluginStore.set(::DiscoursePrometheusAlertReceiver::PLUGIN_NAME, token, receiver_data)
 
       if category.save
         url = "#{Discourse.base_url}/prometheus/receiver/#{token}"
@@ -54,12 +49,11 @@ module DiscoursePrometheusAlertReceiver
     def receive
       find_receiver_from_token
 
-      log("Alert: #{params.except(:alerts, :groupLabels, :commonLabels, :commonAnnotations).inspect}")
-
-      Jobs.enqueue(:process_alert,
-        token: @token,
-        params: params.permit!.to_h
+      log(
+        "Alert: #{params.except(:alerts, :groupLabels, :commonLabels, :commonAnnotations).inspect}",
       )
+
+      Jobs.enqueue(:process_alert, token: @token, params: params.permit!.to_h)
 
       render json: success_json
     end
@@ -69,10 +63,11 @@ module DiscoursePrometheusAlertReceiver
 
       # log("Grouped Alert: #{params.except(:data).inspect}")
 
-      Jobs.enqueue(:process_grouped_alerts,
+      Jobs.enqueue(
+        :process_grouped_alerts,
         token: @token,
         data: params[:data].to_json,
-        external_url: params[:externalURL]
+        external_url: params[:externalURL],
       )
 
       render json: success_json
@@ -83,10 +78,7 @@ module DiscoursePrometheusAlertReceiver
     def find_receiver_from_token
       @token = params.require(:token)
 
-      @receiver = PluginStore.get(
-        ::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
-        @token
-      )
+      @receiver = PluginStore.get(::DiscoursePrometheusAlertReceiver::PLUGIN_NAME, @token)
 
       raise Discourse::InvalidParameters unless @receiver
 
@@ -95,7 +87,9 @@ module DiscoursePrometheusAlertReceiver
     end
 
     def log(info)
-      Rails.logger.warn("Prometheus Alerts Debugging: #{info}") if SiteSetting.prometheus_alert_receiver_debug_enabled
+      if SiteSetting.prometheus_alert_receiver_debug_enabled
+        Rails.logger.warn("Prometheus Alerts Debugging: #{info}")
+      end
     end
   end
 end

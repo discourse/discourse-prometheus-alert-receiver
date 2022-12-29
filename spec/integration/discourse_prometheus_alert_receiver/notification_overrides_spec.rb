@@ -1,9 +1,9 @@
 # frozen_string_literal: true
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
   fab!(:user) { Fabricate(:user) }
-  fab!(:alert_category) { Fabricate(:category, slug: 'alerts') }
+  fab!(:alert_category) { Fabricate(:category, slug: "alerts") }
   fab!(:runbook_topic) { Fabricate(:post, user: user).topic }
 
   def create_topic(user:, category:)
@@ -29,5 +29,4 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
     create_topic(user: Discourse.system_user, category: Fabricate(:category))
     expect(Notification.count).to eq(1)
   end
-
 end

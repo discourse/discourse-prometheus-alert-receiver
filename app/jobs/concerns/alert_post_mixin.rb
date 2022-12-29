@@ -17,26 +17,26 @@ module AlertPostMixin
     raw_alerts.map do |raw_alert|
       alert = {
         external_url: external_url,
-        alertname: raw_alert['labels']['alertname'],
+        alertname: raw_alert["labels"]["alertname"],
         datacenter: raw_alert["labels"]["datacenter"],
-        identifier: raw_alert['labels']['id'] || '',
-        status: normalize_status(raw_alert['status']),
-        starts_at: raw_alert['startsAt'],
-        ends_at: raw_alert['status'] == 'firing' ? nil : raw_alert['endsAt'],
-        generator_url: raw_alert['generatorURL'],
-        description: raw_alert.dig('annotations', 'description'),
-        link_url: raw_alert.dig('annotations', 'link_url'),
-        link_text: raw_alert.dig('annotations', 'link_text')
+        identifier: raw_alert["labels"]["id"] || "",
+        status: normalize_status(raw_alert["status"]),
+        starts_at: raw_alert["startsAt"],
+        ends_at: raw_alert["status"] == "firing" ? nil : raw_alert["endsAt"],
+        generator_url: raw_alert["generatorURL"],
+        description: raw_alert.dig("annotations", "description"),
+        link_url: raw_alert.dig("annotations", "link_url"),
+        link_text: raw_alert.dig("annotations", "link_text"),
       }
 
-      alert[:ends_at] = nil if alert[:status] != 'resolved'
+      alert[:ends_at] = nil if alert[:status] != "resolved"
 
       alert
     end
   end
 
   def normalize_status(status)
-    status = status['state'] if status.is_a?(Hash)
+    status = status["state"] if status.is_a?(Hash)
     return "firing" if status == "active"
     status
   end
@@ -56,7 +56,7 @@ module AlertPostMixin
   end
 
   def generate_title(base_title, firing_count)
-    base_title = base_title.presence || I18n.t('prom_alert_receiver.topic_title.untitled')
+    base_title = base_title.presence || I18n.t("prom_alert_receiver.topic_title.untitled")
     if firing_count > 0
       I18n.t("prom_alert_receiver.topic_title.firing", base_title: base_title, count: firing_count)
     else
@@ -74,26 +74,20 @@ module AlertPostMixin
     firing_count = topic.alert_receiver_alerts.firing.count
     firing = firing_count > 0
 
-    title = generate_title(
-      topic.custom_fields[BASE_TITLE],
-      firing_count
-    )
+    title = generate_title(topic.custom_fields[BASE_TITLE], firing_count)
 
-    raw = first_post_body(
-      topic_body: topic.custom_fields[TOPIC_BODY],
-      prev_topic_id: topic.custom_fields[PREVIOUS_TOPIC]
-    )
+    raw =
+      first_post_body(
+        topic_body: topic.custom_fields[TOPIC_BODY],
+        prev_topic_id: topic.custom_fields[PREVIOUS_TOPIC],
+      )
 
     datacenters = topic.alert_receiver_alerts.distinct.pluck(:datacenter).compact
 
     existing_tags = topic.tags.pluck(:name)
     new_tags = existing_tags | ensure_tags | datacenters
 
-    if firing
-      new_tags << FIRING_TAG
-    else
-      new_tags.delete(FIRING_TAG)
-    end
+    firing ? new_tags << FIRING_TAG : new_tags.delete(FIRING_TAG)
 
     tags_changed = new_tags.uniq != existing_tags
     title_changed = topic.title != title
@@ -102,14 +96,10 @@ module AlertPostMixin
     if raw_changed || title_changed || tags_changed
       PostRevisor.new(topic.first_post, topic).revise!(
         Discourse.system_user,
-        {
-          title: title,
-          raw: raw,
-          tags: new_tags
-        },
+        { title: title, raw: raw, tags: new_tags },
         skip_revision: true,
         skip_validations: true,
-        validate_topic: true # This is a very weird API
+        validate_topic: true, # This is a very weird API
       )
 
       if firing && title_changed && topic.bumped_at < MAX_BUMP_RATE.ago
@@ -125,9 +115,10 @@ module AlertPostMixin
   end
 
   def publish_alert_counts
-    MessageBus.publish("/alert-receiver",
+    MessageBus.publish(
+      "/alert-receiver",
       firing_alerts_count: Topic.firing_alerts.count,
-      open_alerts_count: Topic.open_alerts_count
+      open_alerts_count: Topic.open_alerts_count,
     )
   end
 end

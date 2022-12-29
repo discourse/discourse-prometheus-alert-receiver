@@ -11,15 +11,13 @@ class AddAlertTopicsIndex < ActiveRecord::Migration[6.1]
     WHERE plugin_name = 'discourse-prometheus-alert-receiver'
     SQL
 
-    if category_ids.present?
-      DB.exec(<<~SQL)
+    DB.exec(<<~SQL) if category_ids.present?
       CREATE INDEX CONCURRENTLY idx_alert_topics
       ON topics (id)
       WHERE deleted_at IS NULL
       AND NOT closed
       AND category_id IN (#{category_ids.join(",")})
       SQL
-    end
   end
 
   def down

@@ -1,4 +1,3 @@
-
 # frozen_string_literal: true
 class CreateAlertReceiverAlerts < ActiveRecord::Migration[6.0]
   def change
@@ -20,10 +19,11 @@ class CreateAlertReceiverAlerts < ActiveRecord::Migration[6.0]
     end
 
     add_index :alert_receiver_alerts, :topic_id
-    add_index :alert_receiver_alerts, [:topic_id, :external_url, :identifier],
-                  where: "status in ('firing', 'suppressed')",
-                  unique: true,
-                  name: :index_alert_receiver_alerts_unique_active
+    add_index :alert_receiver_alerts,
+              %i[topic_id external_url identifier],
+              where: "status in ('firing', 'suppressed')",
+              unique: true,
+              name: :index_alert_receiver_alerts_unique_active
 
     reversible do |dir|
       dir.up do

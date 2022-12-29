@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
+require "rails_helper"
 
 describe Topic do
   fab!(:topic) { Fabricate(:topic) }
@@ -11,59 +11,59 @@ describe Topic do
   fab!(:plugin_store_row) do
     PluginStore.set(
       ::DiscoursePrometheusAlertReceiver::PLUGIN_NAME,
-      'sometoken',
-      { category_id: category.id }
+      "sometoken",
+      { category_id: category.id },
     )
   end
 
   fab!(:firing_alert) do
     AlertReceiverAlert.create!(
       topic: topic,
-      status: 'firing',
-      identifier: 'someidentifier',
+      status: "firing",
+      identifier: "someidentifier",
       starts_at: Time.zone.now,
-      external_url: "someurl"
+      external_url: "someurl",
     )
   end
 
   fab!(:silenced_alert) do
     AlertReceiverAlert.create!(
       topic: topic,
-      status: 'silenced',
-      identifier: 'someidentifier2',
+      status: "silenced",
+      identifier: "someidentifier2",
       starts_at: Time.zone.now,
-      external_url: "someurl"
+      external_url: "someurl",
     )
   end
 
   fab!(:suppresed_alert) do
     AlertReceiverAlert.create!(
       topic: topic_2,
-      status: 'suppressed',
-      identifier: 'someidentifier2',
+      status: "suppressed",
+      identifier: "someidentifier2",
       starts_at: Time.zone.now,
-      external_url: "someurl"
+      external_url: "someurl",
     )
   end
 
   fab!(:closed_alert) do
     AlertReceiverAlert.create!(
       topic: closed_topic,
-      status: 'resolved',
-      identifier: 'someidentifier',
+      status: "resolved",
+      identifier: "someidentifier",
       starts_at: Time.zone.now,
-      external_url: "someurl"
+      external_url: "someurl",
     )
   end
 
-  describe '.open_alerts_count' do
-    it 'should return the distinct count of open topics containing alerts' do
+  describe ".open_alerts_count" do
+    it "should return the distinct count of open topics containing alerts" do
       expect(Topic.open_alerts_count).to eq(2)
     end
   end
 
-  describe '.firing_alerts' do
-    it 'should return the right topics' do
+  describe ".firing_alerts" do
+    it "should return the right topics" do
       expect(Topic.firing_alerts).to contain_exactly(firing_alert.topic)
     end
   end

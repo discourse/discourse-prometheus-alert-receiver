@@ -42,12 +42,32 @@ jobs:
           path: plugins/${{ github.event.repository.name }}
           fetch-depth: 1
 
-      - name: Install discourse-assign
-        uses: actions/checkout@v3
-        with:
-          repository: discourse/discourse-assign
-          path: plugins/discourse-assign
-          fetch-depth: 1
+      - name: Install required plugins
+        run: |
+          require 'json'
+
+          metadata_filename = "plugins/${{ github.event.repository.name }}/about.json"
+
+          if !File.exists?(metadata_filename)
+            puts "No about.json found"
+            exit 0
+          end
+
+          parsed = JSON.parse(File.read(metadata_filename))
+
+          plugins = parsed.dig("tests", "requiredPlugins")
+          if plugins.nil?
+            puts "No plugins found"
+            exit 0
+          end
+
+          plugins.each do |plugin_url|
+            puts "Cloning #{plugin_url}..."
+            system("git", "-C", "plugins", "clone", "--depth", "1", plugin_url, exception: true)
+          end
+
+          puts "Done cloning required plugins"
+        shell: ruby {0}
 
       - name: Setup Git
         run: |

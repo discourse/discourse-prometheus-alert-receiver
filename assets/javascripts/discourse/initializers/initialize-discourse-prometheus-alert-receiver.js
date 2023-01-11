@@ -11,12 +11,6 @@ export default {
         return;
       }
 
-      const site = api.container.lookup("site:main");
-
-      messageBus.subscribe("/alert-receiver", (payload) => {
-        site.set("firing_alerts_count", payload.firing_alerts_count);
-      });
-
       api.decorateWidget("post-contents:after-cooked", (dec) => {
         if (dec.attrs.post_number === 1) {
           const postModel = dec.getModel();

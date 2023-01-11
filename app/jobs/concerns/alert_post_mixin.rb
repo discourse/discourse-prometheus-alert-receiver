@@ -113,12 +113,4 @@ module AlertPostMixin
       topic.first_post.publish_change_to_clients!(:revised, reload_topic: true)
     end
   end
-
-  def publish_alert_counts
-    MessageBus.publish(
-      "/alert-receiver",
-      firing_alerts_count: Topic.firing_alerts.count,
-      open_alerts_count: Topic.open_alerts_count,
-    )
-  end
 end

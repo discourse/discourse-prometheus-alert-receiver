@@ -40,14 +40,11 @@ module Jobs
         revise_topic(topic: topic, ensure_tags: tags_from_params(params))
       elsif params["status"] == "resolved"
         # We don't care about resolved alerts if we've closed the topic
-        return
       else
         topic = create_new_topic(receiver, params, new_alerts)
         new_alerts.each { |a| a[:topic_id] = topic.id }
         AlertReceiverAlert.update_alerts(new_alerts)
       end
-
-      publish_alert_counts
     end
 
     def title_from_params(params)

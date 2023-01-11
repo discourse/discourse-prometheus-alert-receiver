@@ -1,7 +1,6 @@
 en:
   site_settings:
     prometheus_alert_receiver_enabled: "Enable prometheus alert receiver"
-    prometheus_alert_receiver_custom_nav_group: "Group that should see the top nav item for open alerts (leave blank to include for everyone)"
     prometheus_alert_receiver_enable_assign: "Enable the assignment of new alert topics based on the topic_assignee and group_topic_assignee annotations"
     prometheus_alert_receiver_debug_enabled: "Enable debugging for prometheus alert receiver"
     prometheus_alert_receiver_grafana_regex: "Regex to detect grafana URLs in the alert's generator_url or the link_url annotation. Blank to disable"

@@ -451,15 +451,11 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
         it "should create the right topic" do
           freeze_time Time.now.utc
 
-          messages =
-            MessageBus.track_publish("/alert-receiver") do
-              expect do post "/prometheus/receiver/#{token}", params: payload end.to change {
-                Topic.count
-              }.by(1)
-            end
+          expect do post "/prometheus/receiver/#{token}", params: payload end.to change {
+            Topic.count
+          }.by(1)
 
           expect(response.status).to eq(200)
-          expect(messages.first.data[:firing_alerts_count]).to eq(1)
           expect(topic.category).to eq(category)
 
           expect(topic.tags.pluck(:name)).to contain_exactly(datacenter, AlertPostMixin::FIRING_TAG)

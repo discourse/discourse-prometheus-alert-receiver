@@ -1,10 +1,12 @@
 import Component from "@glimmer/component";
 import { inject as service } from "@ember/service";
+import { inject as controller } from "@ember/controller";
 import I18n from "I18n";
 import { action } from "@ember/object";
+
 export default class AlertReceiverRow extends Component {
-  @service appEvents;
   @service siteSettings;
+  @controller("topic") topicController;
 
   get generatorUrl() {
     const {
@@ -140,6 +142,11 @@ export default class AlertReceiverRow extends Component {
       alertString += ` - ${description}`;
     }
 
-    this.appEvents.trigger("alerts:quote-alert", alertString);
+    this.topicController.quoteState.selected(
+      this.topicController.model.postStream.stream[0],
+      alertString,
+      {}
+    );
+    this.topicController.send("selectText");
   }
 }

@@ -12,10 +12,12 @@ const COLLAPSE_THRESHOLD = 30;
 export default class AlertReceiverData extends Component {
   @cached
   get groupedByStatus() {
+    const alerts = this.args.topic.get("alert_data");
+
     const byStatus = {};
     const statusCounts = {};
 
-    this.args.alerts.forEach((a) => {
+    alerts.forEach((a) => {
       const byDc = (byStatus[a.status] ??= {});
       statusCounts[a.status] ??= 0;
       const listForStatusAndDc = (byDc[a.datacenter] ??= []);

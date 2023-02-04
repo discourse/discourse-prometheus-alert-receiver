@@ -1,0 +1,14 @@
+{{#each this.groupedByStatus as |statusGroup|}}
+  <h2>
+    {{#if statusGroup.emoji}}{{emoji statusGroup.emoji}} {{/if}}
+    {{i18n statusGroup.titleKey}}
+  </h2>
+  {{#each statusGroup.groupedByDc as |groupedByDc|}}
+    <AlertReceiver::Table
+      @alerts={{groupedByDc.alerts}}
+      @heading={{groupedByDc.dcName}}
+      @headingLink={{groupedByDc.headingLink}}
+      @defaultCollapsed={{statusGroup.defaultCollapsed}}
+    />
+  {{/each}}
+{{/each}}

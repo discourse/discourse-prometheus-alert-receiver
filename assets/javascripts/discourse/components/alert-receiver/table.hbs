@@ -1,22 +1,24 @@
-<AlertReceiver::CollapseToggle
-  @heading={{@heading}}
-  @count={{@alerts.length}}
-  @headingLink={{@headingLink}}
-  @collapsed={{this.isCollapsed}}
-  @toggleCollapsed={{this.toggleCollapsed}}
-/>
+<div class="alert-receiver-table">
+  <AlertReceiver::CollapseToggle
+    @heading={{@heading}}
+    @count={{@alerts.length}}
+    @headingLink={{@headingLink}}
+    @collapsed={{this.isCollapsed}}
+    @toggleCollapsed={{this.toggleCollapsed}}
+  />
 
-{{#unless this.isCollapsed}}
-  <div class="alert-table-wrapper">
-    <table class="prom-alerts-table">
-      <tbody>
-        {{#each @alerts as |alert|}}
-          <AlertReceiver::Row
-            @alert={{alert}}
-            @showDescription={{this.showDescriptionColumn}}
-          />
-        {{/each}}
-      </tbody>
-    </table>
-  </div>
-{{/unless}}
+  {{#unless this.isCollapsed}}
+    <div class="alert-table-wrapper">
+      <table class="prom-alerts-table">
+        <tbody>
+          {{#each @alerts as |alert|}}
+            <AlertReceiver::Row
+              @alert={{alert}}
+              @showDescription={{this.showDescriptionColumn}}
+            />
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+  {{/unless}}
+</div>

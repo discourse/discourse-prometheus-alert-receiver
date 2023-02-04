@@ -1,9 +1,9 @@
 import I18n from "I18n";
 import { createWidget } from "discourse/widgets/widget";
-import hbs from "discourse/widgets/hbs-compiler";
-import RawHtml from "discourse/widgets/raw-html";
+import widgetHbs from "discourse/widgets/hbs-compiler";
+import { hbs } from "ember-cli-htmlbars";
 import { h } from "virtual-dom";
-import { applyLocalDates } from "discourse/lib/local-dates";
+import { registerWidgetShim } from "discourse/widgets/render-glimmer";
 
 const STATUS_NAMES = ["firing", "suppressed", "stale", "resolved"];
 const STATUS_EMOJIS = {
@@ -77,74 +77,11 @@ createWidget("alert-receiver-data", {
   },
 });
 
-createWidget("alert-receiver-date", {
-  tagName: "span.alert-receiver-date",
-  html(attrs) {
-    if (!attrs.timestamp) {
-      return;
-    }
-
-    const splitTimestamp = attrs.timestamp.split("T");
-    if (!splitTimestamp.length === 2) {
-      return;
-    }
-
-    const date = splitTimestamp[0];
-    const time = splitTimestamp[1];
-
-    const dateElement = document.createElement("span");
-    dateElement.className = "discourse-local-date";
-
-    const data = dateElement.dataset;
-
-    if (attrs.hideDate) {
-      data.format = "HH:mm";
-    } else {
-      data.format = "YYYY-MM-DD HH:mm";
-    }
-
-    data.displayedTimezone = "UTC";
-    data.date = date;
-    data.time = time;
-    data.timezone = "UTC";
-
-    dateElement.textContent = attrs.timestamp;
-    applyLocalDates([dateElement], this.siteSettings);
-
-    return new RawHtml({ html: dateElement.outerHTML });
-  },
-});
-
-createWidget("alert-receiver-date-range", {
-  tagName: "span",
-  html(attrs) {
-    const content = [];
-    if (!attrs.startsAt) {
-      return;
-    }
-
-    content.push(
-      this.attach("alert-receiver-date", { timestamp: attrs.startsAt })
-    );
-
-    if (attrs.endsAt) {
-      content.push(" - ");
-      const startDate = attrs.startsAt.split("T")[0];
-      const endDate = attrs.endsAt.split("T")[0];
-
-      const hideDate = startDate === endDate;
-
-      content.push(
-        this.attach("alert-receiver-date", {
-          timestamp: attrs.endsAt,
-          hideDate,
-        })
-      );
-    }
-
-    return content;
-  },
-});
+registerWidgetShim(
+  "alert-receiver-date-range",
+  "span",
+  hbs`<AlertReceiver::DateRange @startsAt={{@data.startsAt}} @endsAt={{@data.endsAt}} />`
+);
 
 createWidget("alert-receiver-row", {
   tagName: "tr",
@@ -273,7 +210,7 @@ createWidget("alert-receiver-row", {
     this.appEvents.trigger("alerts:quote-alert", alertString);
   },
 
-  template: hbs`
+  template: widgetHbs`
     <td><a href={{transformed.generatorUrl}}>{{attrs.alert.identifier}}</a></td>
     <td>
       {{alert-receiver-date-range
@@ -307,7 +244,7 @@ createWidget("alert-receiver-row", {
 createWidget("alert-receiver-external-link", {
   tagName: "div.external-link",
   click() {},
-  template: hbs`
+  template: widgetHbs`
     <a target='_blank' href={{attrs.link}} title={{i18n "prom_alert_receiver.actions.alertmanager"}}>
       {{d-icon 'far-list-alt'}}
     </a>
@@ -335,7 +272,7 @@ createWidget("alert-receiver-collapse-toggle", {
     };
   },
 
-  template: hbs`
+  template: widgetHbs`
     <div class='collapse-icon'>
       <a>{{d-icon this.transformed.icon}}</a>
     </div>
@@ -368,7 +305,7 @@ createWidget("alert-receiver-table", {
     return { collapsed: attrs.defaultCollapsed };
   },
 
-  template: hbs`
+  template: widgetHbs`
     {{alert-receiver-collapse-toggle heading=attrs.heading count=attrs.alerts.length headingLink=attrs.headingLink collapsed=state.collapsed}}
 
     {{#unless state.collapsed}}

@@ -1,0 +1,16 @@
+<div
+  {{on "click" @toggleCollapsed}}
+  class={{concat-class
+    "alert-receiver-collapse-toggle"
+    (if @collapsed "collapsed")
+  }}
+>
+  <div class="collapse-icon">
+    <a>{{d-icon (if @collapsed "caret-right" "caret-down")}}</a>
+  </div>
+  <div class="heading">
+    {{@heading}}
+    ({{@count}})
+  </div>
+  <AlertReceiver::ExternalLink @link={{@headingLink}} />
+</div>

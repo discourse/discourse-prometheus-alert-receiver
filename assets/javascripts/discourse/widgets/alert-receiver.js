@@ -78,91 +78,12 @@ createWidget("alert-receiver-data", {
 });
 
 registerWidgetShim(
-  "alert-receiver-row",
-  "tr",
-  hbs`<AlertReceiver::Row
-        @alert={{@data.alert}}
-        @showDescription={{@data.showDescription}}
+  "alert-receiver-table",
+  "div.alert-receiver-table",
+  hbs`<AlertReceiver::Table
+        @alerts={{@data.alerts}}
+        @heading={{@data.heading}}
+        @headingLink={{@data.headingLink}}
+        @defaultCollapsed={{@data.defaultCollapsed}}
       />`
 );
-
-registerWidgetShim(
-  "alert-receiver-external-link",
-  "div.external-link",
-  hbs`<AlertReceiver::ExternalLink @link={{@data.link}} />`
-);
-
-createWidget("alert-receiver-collapse-toggle", {
-  tagName: "div",
-
-  buildClasses(attrs) {
-    let classString = "alert-receiver-collapse-toggle";
-    if (attrs.collapsed) {
-      classString += " collapsed";
-    }
-    return classString;
-  },
-
-  click() {
-    this.sendWidgetAction("toggleCollapse");
-  },
-
-  transform(attrs) {
-    return {
-      icon: attrs.collapsed ? "caret-right" : "caret-down",
-    };
-  },
-
-  template: widgetHbs`
-    <div class='collapse-icon'>
-      <a>{{d-icon this.transformed.icon}}</a>
-    </div>
-    <div class='heading'>
-      {{attrs.heading}}
-      ({{attrs.count}})
-    </div>
-    {{alert-receiver-external-link link=attrs.headingLink}}
-  `,
-});
-
-createWidget("alert-receiver-table", {
-  tagName: "div.alert-receiver-table",
-  buildKey: (attrs) => `alert-table-${attrs.status}-${attrs.heading}`,
-
-  buildAttributes(attrs) {
-    return {
-      "data-alert-status": attrs.status,
-    };
-  },
-
-  transform(attrs, state) {
-    return {
-      showDescriptionColumn: attrs.alerts.any((a) => a.description),
-      collapseToggleIcon: state.collapsed ? "caret-right" : "caret-down",
-    };
-  },
-
-  defaultState(attrs) {
-    return { collapsed: attrs.defaultCollapsed };
-  },
-
-  template: widgetHbs`
-    {{alert-receiver-collapse-toggle heading=attrs.heading count=attrs.alerts.length headingLink=attrs.headingLink collapsed=state.collapsed}}
-
-    {{#unless state.collapsed}}
-      <div class='alert-table-wrapper'>
-        <table class="prom-alerts-table">
-          <tbody>
-            {{#each attrs.alerts as |alert|}}
-              {{alert-receiver-row alert=alert showDescription=this.transformed.showDescriptionColumn}}
-            {{/each}}
-          </tbody>
-        </table>
-      </div>
-    {{/unless}}
-  `,
-
-  toggleCollapse() {
-    this.state.collapsed = !this.state.collapsed;
-  },
-});

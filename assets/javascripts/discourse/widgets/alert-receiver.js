@@ -241,15 +241,11 @@ createWidget("alert-receiver-row", {
   `,
 });
 
-createWidget("alert-receiver-external-link", {
-  tagName: "div.external-link",
-  click() {},
-  template: widgetHbs`
-    <a target='_blank' href={{attrs.link}} title={{i18n "prom_alert_receiver.actions.alertmanager"}}>
-      {{d-icon 'far-list-alt'}}
-    </a>
-  `,
-});
+registerWidgetShim(
+  "alert-receiver-external-link",
+  "div.external-link",
+  hbs`<AlertReceiver::ExternalLink @link={{@data.link}} />`
+);
 
 createWidget("alert-receiver-collapse-toggle", {
   tagName: "div",

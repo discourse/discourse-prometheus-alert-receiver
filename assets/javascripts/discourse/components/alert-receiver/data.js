@@ -38,11 +38,11 @@ export default class AlertReceiverData extends Component {
       }
 
       const orderedDcData = Object.entries(byDc)
-        .map(([dcName, alerts]) => {
+        .map(([dcName, dcAlerts]) => {
           return {
-            alerts,
+            alerts: dcAlerts,
             dcName,
-            headingLink: alerts[0].external_url,
+            headingLink: dcAlerts[0].external_url,
           };
         })
         .sort((a, b) => (a.dcName > b.dcName ? 1 : -1));

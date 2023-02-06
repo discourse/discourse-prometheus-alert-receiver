@@ -5,6 +5,7 @@
   </h2>
   {{#each statusGroup.groupedByDc as |groupedByDc|}}
     <AlertReceiver::Table
+      @statusName={{statusGroup.statusName}}
       @alerts={{groupedByDc.alerts}}
       @heading={{groupedByDc.dcName}}
       @headingLink={{groupedByDc.headingLink}}

@@ -48,6 +48,7 @@ export default class AlertReceiverData extends Component {
         .sort((a, b) => (a.dcName > b.dcName ? 1 : -1));
 
       return {
+        statusName,
         emoji: STATUS_EMOJIS[statusName],
         titleKey: `prom_alert_receiver.headers.${statusName}`,
         defaultCollapsed,

@@ -1,6 +1,6 @@
 {{#each this.groupedByStatus as |statusGroup|}}
   <h2>
-    {{#if statusGroup.emoji}}{{emoji statusGroup.emoji}} {{/if}}
+    {{#if statusGroup.emoji}}{{emoji statusGroup.emoji}}{{/if}}
     {{i18n statusGroup.titleKey}}
   </h2>
   {{#each statusGroup.groupedByDc as |groupedByDc|}}

@@ -4,11 +4,11 @@
     @time={{this.parsedStart.time}}
   />
 
-  {{#if @startsAt}}
+  {{#if @endsAt}}
     -
     <AlertReceiver::Timestamp
-      @date={{this.parsedStart.date}}
-      @time={{this.parsedStart.time}}
+      @date={{this.parsedEnd.date}}
+      @time={{this.parsedEnd.time}}
       @hideDate={{this.hideEndDate}}
     />
   {{/if}}

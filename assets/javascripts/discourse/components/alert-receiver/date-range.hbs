@@ -1,0 +1,15 @@
+<span>
+  <AlertReceiver::Timestamp
+    @date={{this.parsedStart.date}}
+    @time={{this.parsedStart.time}}
+  />
+
+  {{#if @startsAt}}
+    -
+    <AlertReceiver::Timestamp
+      @date={{this.parsedStart.date}}
+      @time={{this.parsedStart.time}}
+      @hideDate={{this.hideEndDate}}
+    />
+  {{/if}}
+</span>

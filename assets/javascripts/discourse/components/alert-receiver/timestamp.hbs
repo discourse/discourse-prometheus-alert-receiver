@@ -1,0 +1,10 @@
+<span class="alert-receiver-date">
+  <span
+    class="discourse-local-date"
+    data-format={{if @hideDate "HH:mm" "YYYY-MM-DD HH:mm"}}
+    data-date={{@date}}
+    data-time={{@time}}
+    data-timezone="UTC"
+    {{did-insert this.applyLocalDates}}
+  >{{@date}}T{{@time}}</span>
+</span>

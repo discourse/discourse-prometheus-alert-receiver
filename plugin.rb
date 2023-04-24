@@ -81,13 +81,11 @@ after_initialize do
     )
   end
 
-  add_to_serializer(:topic_view, :alert_data) do
-    ActiveModel::ArraySerializer.new(object.topic.alert_receiver_alerts)
-  end
-
-  add_to_serializer(:topic_view, :include_alert_data?) do
-    object.topic.alert_receiver_alerts.present?
-  end
+  add_to_serializer(
+    :topic_view,
+    :alert_data,
+    include_condition: -> { object.topic.alert_receiver_alerts.present? },
+  ) { ActiveModel::ArraySerializer.new(object.topic.alert_receiver_alerts) }
 
   on(:after_extract_linked_users) do |users, post|
     if post.post_number == 1 && post.user == Discourse.system_user &&

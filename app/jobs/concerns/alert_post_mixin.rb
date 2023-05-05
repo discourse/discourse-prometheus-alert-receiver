@@ -51,7 +51,7 @@ module AlertPostMixin
 
   def prev_topic_link(topic_id)
     return "" if topic_id.nil?
-    return "" unless created_at = Topic.where(id: topic_id).pluck_first(:created_at)
+    return "" unless created_at = Topic.where(id: topic_id).pick(:created_at)
     "[Previous alert](#{Discourse.base_url}/t/#{topic_id}) #{local_date(created_at.to_s)}\n\n"
   end
 

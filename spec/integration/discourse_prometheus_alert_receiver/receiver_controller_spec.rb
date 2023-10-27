@@ -354,7 +354,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
     let(:receiver) { PluginStore.get(plugin_name, token) }
 
     before do
-      SiteSetting.queue_jobs = false
+      Jobs.run_immediately!
       SiteSetting.tagging_enabled = true
     end
 

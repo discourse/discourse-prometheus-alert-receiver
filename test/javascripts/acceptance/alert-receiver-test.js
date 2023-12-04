@@ -1,4 +1,4 @@
-import { acceptance, exists } from "discourse/tests/helpers/qunit-helpers";
+import { acceptance, query } from "discourse/tests/helpers/qunit-helpers";
 import topicFixtures from "discourse/tests/fixtures/topic";
 import { visit } from "@ember/test-helpers";
 import { test } from "qunit";
@@ -53,14 +53,12 @@ acceptance("Alert Receiver", function (needs) {
 
   test("displays all the alerts", async (assert) => {
     await visit("/t/internationalization-localization/281");
-    assert.ok(
-      exists(".prometheus-alert-receiver"),
-      "the prometheus data is visible"
-    );
+    assert
+      .dom(".prometheus-alert-receiver")
+      .exists("the prometheus data is visible");
 
-    const alertNames = find(".prometheus-alert-receiver")[0].querySelectorAll(
-      "table tr td:first-child"
-    );
+    const receiver = query(".prometheus-alert-receiver");
+    const alertNames = receiver.querySelectorAll("table tr td:first-child");
     assert.deepEqual(
       Array.from(alertNames)
         .map((e) => e.innerText)
@@ -69,24 +67,28 @@ acceptance("Alert Receiver", function (needs) {
       "the alerts are all visible"
     );
 
-    assert.equal(
-      find(".prometheus-alert-receiver .external-link a").attr("href"),
-      "http://alertmanager.example.com",
-      "links the per-dc header to the alertmanager"
-    );
+    assert
+      .dom(".prometheus-alert-receiver .external-link a")
+      .hasAttribute(
+        "href",
+        "http://alertmanager.example.com",
+        "links the per-dc header to the alertmanager"
+      );
 
-    assert.equal(
-      find(
+    assert
+      .dom(
         ".prometheus-alert-receiver [data-alert-status='resolved'] table tr td:first-child a"
-      ).attr("href"),
-      "https://metrics.sjc1.discourse.cloud/graph?g0.expr=mymetric&g0.tab=0&g0.range_input=1127s&g0.end_input=2020-07-27T17%3A40%3A35.870Z",
-      "links each alert to its graph, with added timestamp"
-    );
+      )
+      .hasAttribute(
+        "href",
+        "https://metrics.sjc1.discourse.cloud/graph?g0.expr=mymetric&g0.tab=0&g0.range_input=1127s&g0.end_input=2020-07-27T17%3A40%3A35.870Z",
+        "links each alert to its graph, with added timestamp"
+      );
 
     const renderedHref = new URL(
-      find(
+      query(
         ".prometheus-alert-receiver [data-alert-status='resolved'] table tr td:last-child a"
-      ).attr("href")
+      ).href
     );
     const expectedHref = new URL(
       "https://logs.sjc1.discourse.cloud/app/kibana#/discover?_g=(time:(from:'2020-07-27T17:26:49.526234411Z',mode:absolute,to:'2020-07-27T17:35:35.870002386Z'))&_a=(columns:!(),filters:!((query:(match:(moby.name:(query:mycontainer,type:phrase))))))"
@@ -94,12 +96,12 @@ acceptance("Alert Receiver", function (needs) {
 
     renderedHref.hash = decodeURIComponent(renderedHref.hash);
 
-    assert.equal(
+    assert.strictEqual(
       renderedHref.toString(),
       expectedHref.toString(),
       "adds a log link, with correct timestamps"
     );
 
-    assert.ok(exists(".discourse-local-date"), "dates are output");
+    assert.dom(".discourse-local-date").exists("dates are output");
   });
 });

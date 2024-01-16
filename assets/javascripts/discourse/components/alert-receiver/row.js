@@ -1,8 +1,8 @@
 import Component from "@glimmer/component";
-import { inject as service } from "@ember/service";
 import { inject as controller } from "@ember/controller";
-import I18n from "I18n";
 import { action } from "@ember/object";
+import { inject as service } from "@ember/service";
+import I18n from "I18n";
 
 export default class AlertReceiverRow extends Component {
   @service siteSettings;

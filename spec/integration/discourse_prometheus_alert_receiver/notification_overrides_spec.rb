@@ -21,7 +21,7 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
   end
 
   it "doesn't break non-system posts" do
-    create_topic(user: Fabricate(:user), category: alert_category)
+    create_topic(user: Fabricate(:user, refresh_auto_groups: true), category: alert_category)
     expect(Notification.count).to eq(1)
   end
 

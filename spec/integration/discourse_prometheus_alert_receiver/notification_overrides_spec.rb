@@ -2,7 +2,7 @@
 require "rails_helper"
 
 RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
-  fab!(:user) { Fabricate(:user) }
+  fab!(:user)
   fab!(:alert_category) { Fabricate(:category, slug: "alerts") }
   fab!(:runbook_topic) { Fabricate(:post, user: user).topic }
 

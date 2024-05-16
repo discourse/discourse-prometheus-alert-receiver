@@ -23,14 +23,12 @@ after_initialize do
     end
   end
 
-  %w[
-    ../app/controllers/discourse_prometheus_alert_receiver/receiver_controller.rb
-    ../app/models/alert_receiver_alert.rb
-    ../app/serializers/alert_receiver_alert.rb
-    ../app/jobs/concerns/alert_post_mixin.rb
-    ../app/jobs/regular/process_alert.rb
-    ../app/jobs/regular/process_grouped_alerts.rb
-  ].each { |path| load File.expand_path(path, __FILE__) }
+  require_relative "app/controllers/discourse_prometheus_alert_receiver/receiver_controller"
+  require_relative "app/models/alert_receiver_alert"
+  require_relative "app/serializers/alert_receiver_alert"
+  require_relative "app/jobs/concerns/alert_post_mixin"
+  require_relative "app/jobs/regular/process_alert"
+  require_relative "app/jobs/regular/process_grouped_alerts"
 
   unless Rails.env.test?
     %i[tagging_enabled allow_duplicate_topic_titles].each do |setting|

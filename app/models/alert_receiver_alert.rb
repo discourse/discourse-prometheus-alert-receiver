@@ -15,7 +15,7 @@ class AlertReceiverAlert < ActiveRecord::Base
   scope :stale, -> { where(status: "stale") }
 
   def self.update_resolved_and_suppressed(alerts)
-    return [] unless alerts.present?
+    return [] if alerts.blank?
 
     value_columns = %w[topic_id external_url identifier status ends_at description]
 
@@ -46,7 +46,7 @@ class AlertReceiverAlert < ActiveRecord::Base
   end
 
   def self.update_firing(alerts)
-    return [] unless alerts.present?
+    return [] if alerts.blank?
 
     insert_columns = column_names - ["id"]
     update_columns = insert_columns - %w[topic_id identifier starts_at external_url]

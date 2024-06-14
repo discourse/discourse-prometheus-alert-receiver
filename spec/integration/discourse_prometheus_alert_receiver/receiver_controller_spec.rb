@@ -930,12 +930,11 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
 
         let(:topic) { Topic.find_by(id: receiver["topic_map"][alert_name]) }
 
-        before do
-          assignee_group.add(bob)
-          payload["commonAnnotations"]["topic_assignee"] = "bobtheangryflower"
-        end
+        before { assignee_group.add(bob) }
 
-        it "creates a new topic" do
+        it "creates a new topic with the right assignment when `commonAnnotations.topic_assignee` field is present in the payload" do
+          payload["commonAnnotations"]["topic_assignee"] = "bobtheangryflower"
+
           expect do post "/prometheus/receiver/#{token}", params: payload end.to change {
             Topic.count
           }.by(1)
@@ -943,7 +942,20 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
           expect(topic.assigned_to).to eq(bob)
         end
 
-        describe "when prometheus_alert_receiver_enable_assign is false" do
+        it "creates a new topic with the right assignment when `commonAnnotations.topic_group_assignee` field is present in the payload" do
+          assignee_group.update!(assignable_level: Group::ALIAS_LEVELS[:only_admins])
+
+          payload["commonAnnotations"]["topic_group_assignee"] = assignee_group.name
+
+          expect do post "/prometheus/receiver/#{token}", params: payload end.to change {
+            Topic.count
+          }.by(1)
+
+          expect(response.status).to eq(200)
+          expect(topic.assigned_to).to eq(assignee_group)
+        end
+
+        describe "when `prometheus_alert_receiver_enable_assign` site setting is false" do
           before { SiteSetting.prometheus_alert_receiver_enable_assign = false }
 
           it "should not assign anyone to the topic" do
@@ -952,27 +964,6 @@ RSpec.describe DiscoursePrometheusAlertReceiver::ReceiverController do
             }.by(1)
 
             expect(topic.assigned_to).to eq(nil)
-          end
-        end
-
-        describe "when group_topic_assignee is present in the payload" do
-          before do
-            assignee_group.users << [Fabricate(:user), Fabricate(:user)]
-            payload["commonAnnotations"].delete("topic_assignee")
-          end
-
-          it "should assign the topic correctly" do
-            [assignee_group.name, assignee_group.id].each do |id_or_name|
-              payload["commonAnnotations"]["group_topic_assignee"] = id_or_name
-
-              expect do post "/prometheus/receiver/#{token}", params: payload end.to change {
-                Topic.count
-              }.by(1)
-
-              expect(response.status).to eq(200)
-              expect(assignee_group.users.include?(topic.assigned_to)).to eq(true)
-              topic.destroy!
-            end
           end
         end
       end

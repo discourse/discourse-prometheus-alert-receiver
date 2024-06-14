@@ -55,17 +55,15 @@ randomly-selected member of a specified group.
   to give a brief description of the problem, and potentially links to a
   runbook or other useful information.
 
-- **`topic_assignee`**: This overrides the random group member selection,
-  and allows you to "force-assign" alerts to one person. The intended
-  use-case for this is during the development phase of a new alert, to
-  prevent spurious false-positives from annoying everyone. The forced
-  assignee does not need to be a member of the group that assignees are
-  normally chosen from.
+- **`topic_assignee`**: Accepts `User#username`. Automatically
+  assigns the created topic to the specified user. Note that the specified user
+  has to be an admin or is a member of an assignable group given by the
+  `assign_allowed_on_groups` site setting.
 
-- **`group_topic_assignee`**: Given the `Group#id` or `Group#name` for a group,
-  this overrides the `assignee_group_id` that was created with the receiver
-  token. A person in the group will be randomly selected for assignment to the
-  alert.
+- **`topic_group_assignee`**: Accepts `Group#name`. Automatically
+  assigns the created topic to the specified group. Note that the specified
+  group has to at least be assignable by an admin. The assignability of a group
+  can be configured at the `/g/admins/manage/interaction` path.
 
 - **`description`** -- the description will be displayed under each alert.
 

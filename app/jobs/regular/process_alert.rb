@@ -98,25 +98,14 @@ module Jobs
           PluginStore.set(::DiscoursePrometheusAlertReceiver::PLUGIN_NAME, @token, receiver)
 
           assignee =
-            if params["commonAnnotations"]["topic_assignee"]
-              User.find_by(username: params["commonAnnotations"]["topic_assignee"])
-            elsif params["commonAnnotations"]["group_topic_assignee"]
-              random_group_member(params["commonAnnotations"]["group_topic_assignee"])
+            if username = params["commonAnnotations"]["topic_assignee"]
+              User.where("username_lower = ?", username.downcase).first
+            elsif group_name = params["commonAnnotations"]["topic_group_assignee"]
+              Group.where("LOWER(name) = ?", group_name.downcase).first
             end
 
           assign_alert(t, receiver, assignee: assignee)
         end
-    end
-
-    def random_group_member(id_or_name)
-      attributes =
-        if id_or_name.to_i != 0
-          { id: id_or_name.to_i }
-        else
-          "LOWER(name) LIKE '#{id_or_name}'"
-        end
-
-      Group.find_by(attributes).users.sample
     end
 
     def assign_alert(topic, receiver, assignee: nil)

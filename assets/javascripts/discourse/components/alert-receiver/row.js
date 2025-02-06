@@ -2,7 +2,7 @@ import Component from "@glimmer/component";
 import { inject as controller } from "@ember/controller";
 import { action } from "@ember/object";
 import { service } from "@ember/service";
-import I18n from "I18n";
+import { i18n } from "discourse-i18n";
 
 export default class AlertReceiverRow extends Component {
   @service siteSettings;
@@ -28,7 +28,7 @@ export default class AlertReceiverRow extends Component {
 
   get linkText() {
     return (
-      this.args.alert.link_text || I18n.t("prom_alert_receiver.actions.link")
+      this.args.alert.link_text || i18n("prom_alert_receiver.actions.link")
     );
   }
 

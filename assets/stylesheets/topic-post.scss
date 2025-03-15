@@ -5,9 +5,11 @@
   & > * {
     order: 3;
   }
+
   & > .cooked {
     order: 1;
   }
+
   & > .prometheus-alert-receiver {
     order: 2;
   }

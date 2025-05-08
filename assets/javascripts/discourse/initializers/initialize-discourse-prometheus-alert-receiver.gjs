@@ -11,10 +11,6 @@ export default {
   initialize() {
     withPluginApi((api) => {
       customizePost(api);
-
-      withSilencedDeprecations("discourse.post-stream-widget-overrides", () =>
-        customizeWidgetPost(api)
-      );
     });
   },
 };

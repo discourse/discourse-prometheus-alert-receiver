@@ -59,7 +59,7 @@ function alertData(status, datacenter, id) {
         await visit("/t/internationalization-localization/281");
         assert
           .dom(".prometheus-alert-receiver")
-          .exists("the prometheus data is visible");
+          .exists({ count: 1 }, "the prometheus data is present");
 
         const receiver = query(".prometheus-alert-receiver");
         const alertNames = receiver.querySelectorAll("table tr td:first-child");

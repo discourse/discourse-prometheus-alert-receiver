@@ -1,5 +1,8 @@
 import Component from "@glimmer/component";
 import { cached } from "@glimmer/tracking";
+import emoji from "discourse/helpers/emoji";
+import { i18n } from "discourse-i18n";
+import Table from "./table";
 
 const STATUS_NAMES = ["firing", "suppressed", "stale", "resolved"];
 const STATUS_EMOJIS = {
@@ -56,4 +59,22 @@ export default class AlertReceiverData extends Component {
       };
     }).filter(Boolean);
   }
+
+  <template>
+    {{#each this.groupedByStatus as |statusGroup|}}
+      <h2>
+        {{#if statusGroup.emoji}}{{emoji statusGroup.emoji}}{{/if}}
+        {{i18n statusGroup.titleKey}}
+      </h2>
+      {{#each statusGroup.groupedByDc as |groupedByDc|}}
+        <Table
+          @statusName={{statusGroup.statusName}}
+          @alerts={{groupedByDc.alerts}}
+          @heading={{groupedByDc.dcName}}
+          @headingLink={{groupedByDc.headingLink}}
+          @defaultCollapsed={{statusGroup.defaultCollapsed}}
+        />
+      {{/each}}
+    {{/each}}
+  </template>
 }

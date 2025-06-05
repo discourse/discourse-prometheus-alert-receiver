@@ -1,4 +1,5 @@
 import Component from "@glimmer/component";
+import Timestamp from "./timestamp";
 
 function parseTimestamp(timestamp) {
   if (timestamp) {
@@ -19,4 +20,21 @@ export default class AlertReceiverDateRange extends Component {
   get hideEndDate() {
     return this.parsedStart.date === this.parsedEnd?.date;
   }
+
+  <template>
+    <span>
+      <Timestamp
+        @date={{this.parsedStart.date}}
+        @time={{this.parsedStart.time}}
+      />
+
+      {{#if @endsAt}}
+        -&nbsp;<Timestamp
+          @date={{this.parsedEnd.date}}
+          @time={{this.parsedEnd.time}}
+          @hideDate={{this.hideEndDate}}
+        />
+      {{/if}}
+    </span>
+  </template>
 }

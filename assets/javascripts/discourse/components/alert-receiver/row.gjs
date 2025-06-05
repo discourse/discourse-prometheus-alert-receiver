@@ -2,7 +2,10 @@ import Component from "@glimmer/component";
 import { inject as controller } from "@ember/controller";
 import { action } from "@ember/object";
 import { service } from "@ember/service";
+import DButton from "discourse/components/d-button";
+import icon from "discourse/helpers/d-icon";
 import { i18n } from "discourse-i18n";
+import DateRange from "./date-range";
 
 export default class AlertReceiverRow extends Component {
   @service siteSettings;
@@ -149,4 +152,35 @@ export default class AlertReceiverRow extends Component {
     );
     this.topicController.send("selectText");
   }
+
+  <template>
+    <tr>
+      <td><a href={{this.generatorUrl}}>{{@alert.identifier}}</a></td>
+      <td>
+        <DateRange @startsAt={{@alert.starts_at}} @endsAt={{@alert.ends_at}} />
+      </td>
+      {{#if @showDescription}}
+        <td>{{@alert.description}}</td>
+      {{/if}}
+      <td>
+        <div>
+          {{#if this.linkUrl}}
+            <a
+              class="btn btn-flat no-text btn-icon"
+              href={{this.linkUrl}}
+              title={{this.linkText}}
+            >
+              {{icon "up-right-from-square"}}
+            </a>
+          {{/if}}
+          <DButton
+            @action={{this.quoteAlert}}
+            @icon="quote-left"
+            @title="prom_alert_receiver.actions.quote"
+            class="btn-flat"
+          />
+        </div>
+      </td>
+    </tr>
+  </template>
 }

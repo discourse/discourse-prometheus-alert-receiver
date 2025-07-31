@@ -150,20 +150,20 @@ end
 # Table name: alert_receiver_alerts
 #
 #  id            :bigint           not null, primary key
-#  topic_id      :integer          not null
-#  status        :string           not null
-#  identifier    :string           not null
-#  description   :string
 #  datacenter    :string
-#  starts_at     :datetime         not null
+#  description   :string
 #  ends_at       :datetime
 #  external_url  :string           not null
-#  link_url      :string
-#  link_text     :string
 #  generator_url :string
+#  identifier    :string           not null
+#  link_text     :string
+#  link_url      :string
+#  starts_at     :datetime         not null
+#  status        :string           not null
+#  topic_id      :integer          not null
 #
 # Indexes
 #
 #  index_alert_receiver_alerts_on_topic_id    (topic_id)
-#  index_alert_receiver_alerts_unique_active  (topic_id,external_url,identifier) UNIQUE WHERE ((status)::text = ANY (ARRAY[('firing'::character varying)::text, ('suppressed'::character varying)::text]))
+#  index_alert_receiver_alerts_unique_active  (topic_id,external_url,identifier) UNIQUE WHERE ((status)::text = ANY ((ARRAY['firing'::character varying, 'suppressed'::character varying])::text[]))
 #

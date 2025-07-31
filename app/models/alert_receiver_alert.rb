@@ -165,5 +165,5 @@ end
 # Indexes
 #
 #  index_alert_receiver_alerts_on_topic_id    (topic_id)
-#  index_alert_receiver_alerts_unique_active  (topic_id,external_url,identifier) UNIQUE WHERE ((status)::text = ANY ((ARRAY['firing'::character varying, 'suppressed'::character varying])::text[]))
+#  index_alert_receiver_alerts_unique_active  (topic_id,external_url,identifier) UNIQUE WHERE ((status)::text = ANY (ARRAY[('firing'::character varying)::text, ('suppressed'::character varying)::text]))
 #

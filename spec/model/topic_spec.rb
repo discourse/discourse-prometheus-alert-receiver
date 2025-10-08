@@ -4,7 +4,7 @@ require "rails_helper"
 
 describe Topic do
   fab!(:topic)
-  fab!(:topic_2) { Fabricate(:topic) }
+  fab!(:topic_2, :topic)
   fab!(:category) { topic.category }
   fab!(:closed_topic) { Fabricate(:topic, category: category, closed: true) }
 

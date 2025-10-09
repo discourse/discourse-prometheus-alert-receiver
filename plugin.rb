@@ -74,7 +74,7 @@ after_initialize do
   add_class_method(:topic, :firing_alerts) do |category_ids = []|
     joins(:alert_receiver_alerts).where("alert_receiver_alerts.status": "firing").where(
       "not topics.closed AND topics.category_id IN (?)",
-      category_ids.present? ? category_ids : alerts_category_ids,
+      (category_ids.presence || alerts_category_ids),
     )
   end
 

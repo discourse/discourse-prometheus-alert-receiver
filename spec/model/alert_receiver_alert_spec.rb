@@ -2,8 +2,8 @@
 require "rails_helper"
 
 RSpec.describe AlertReceiverAlert do
-  fab!(:topic1) { Fabricate(:topic) }
-  fab!(:topic2) { Fabricate(:topic) }
+  fab!(:topic1, :topic)
+  fab!(:topic2, :topic)
 
   def alert(args)
     dc = args[:datacenter] || "dc"

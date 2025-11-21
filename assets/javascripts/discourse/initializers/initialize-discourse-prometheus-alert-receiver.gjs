@@ -1,8 +1,5 @@
 import Component from "@glimmer/component";
-import { hbs } from "ember-cli-htmlbars";
-import { withSilencedDeprecations } from "discourse/lib/deprecated";
 import { withPluginApi } from "discourse/lib/plugin-api";
-import { registerWidgetShim } from "discourse/widgets/render-glimmer";
 import AlertReceiverData from "../components/alert-receiver/data";
 
 export default {

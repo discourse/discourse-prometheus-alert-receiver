@@ -12,7 +12,7 @@ export default class AlertReceiverTable extends Component {
   }
 
   get showDescriptionColumn() {
-    return this.args.alerts.any((a) => a.description);
+    return this.args.alerts.some((a) => a.description);
   }
 
   @action

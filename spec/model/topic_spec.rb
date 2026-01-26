@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
 describe Topic do
   fab!(:topic)
   fab!(:topic_2, :topic)

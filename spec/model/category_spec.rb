@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "rails_helper"
-
 RSpec.describe Category do
   let(:category) { Fabricate(:category) }
   let(:admin) { Fabricate(:admin) }

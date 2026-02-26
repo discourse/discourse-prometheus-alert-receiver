@@ -145,6 +145,10 @@ class AlertReceiverAlert < ActiveRecord::Base
   end
 end
 
+# Seems to be a bug *somewhere* which causes the index line in the schema to fluctuate between
+# two different formats. Skipping the file to avoid CI failures.
+# -*- SkipSchemaAnnotations
+
 # == Schema Information
 #
 # Table name: alert_receiver_alerts

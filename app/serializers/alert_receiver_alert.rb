@@ -10,5 +10,6 @@ class AlertReceiverAlertSerializer < ApplicationSerializer
              :external_url,
              :generator_url,
              :link_url,
-             :link_text
+             :link_text,
+             :last_suppressed_at
 end

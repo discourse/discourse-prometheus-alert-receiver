@@ -11,6 +11,24 @@ export default class AlertReceiverRow extends Component {
   @service siteSettings;
   @controller("topic") topicController;
 
+  get wasRecentlySuppressed() {
+    if (!this.args.alert.last_suppressed_at) {
+      return false;
+    }
+
+    const suppressedDate = new Date(this.args.alert.last_suppressed_at);
+    const daysSinceSuppressed =
+      (Date.now() - suppressedDate.getTime()) / (1000 * 60 * 60 * 24);
+    return daysSinceSuppressed <= 90;
+  }
+
+  get suppressedDateFormatted() {
+    if (!this.args.alert.last_suppressed_at) {
+      return "";
+    }
+    return new Date(this.args.alert.last_suppressed_at).toLocaleDateString();
+  }
+
   get generatorUrl() {
     const {
       generator_url: url,
@@ -155,7 +173,18 @@ export default class AlertReceiverRow extends Component {
 
   <template>
     <tr>
-      <td><a href={{this.generatorUrl}}>{{@alert.identifier}}</a></td>
+      <td>
+        <a href={{this.generatorUrl}}>{{@alert.identifier}}</a>
+        {{#if this.wasRecentlySuppressed}}
+          <span
+            class="alert-was-suppressed"
+            title="This alert was previously silenced on {{this.suppressedDateFormatted}}"
+          >
+            {{icon "bell-slash"}}
+            <span class="was-suppressed-text">Previously silenced</span>
+          </span>
+        {{/if}}
+      </td>
       <td>
         <DateRange @startsAt={{@alert.starts_at}} @endsAt={{@alert.ends_at}} />
       </td>

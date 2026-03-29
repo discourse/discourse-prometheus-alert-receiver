@@ -26,7 +26,14 @@ class AlertReceiverAlert < ActiveRecord::Base
 
     query = <<~SQL
       UPDATE alert_receiver_alerts alerts
-      SET status=data.status, ends_at=data.ends_at::timestamp, description=data.description
+      SET
+        status=data.status,
+        ends_at=data.ends_at::timestamp,
+        description=data.description,
+        last_suppressed_at = CASE
+          WHEN data.status = 'suppressed' THEN CURRENT_TIMESTAMP
+          ELSE alerts.last_suppressed_at
+        END
       FROM (values #{values_string})
         AS data(topic_id, external_url, identifier, status, ends_at, description)
       WHERE alerts.topic_id = data.topic_id
@@ -49,7 +56,8 @@ class AlertReceiverAlert < ActiveRecord::Base
     return [] if alerts.blank?
 
     insert_columns = column_names - ["id"]
-    update_columns = insert_columns - %w[topic_id identifier starts_at external_url]
+    update_columns =
+      insert_columns - %w[topic_id identifier starts_at external_url last_suppressed_at]
 
     array_to_insert = alerts.pluck(*insert_columns.map(&:to_sym))
     hash_to_insert = Hash[array_to_insert.each_with_index.map { |v, i| [:"value#{i}", v] }]

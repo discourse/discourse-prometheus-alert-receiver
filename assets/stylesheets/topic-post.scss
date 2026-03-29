@@ -104,4 +104,32 @@
       display: none;
     }
   }
+
+  .alert-was-suppressed {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+    margin-left: 0.5em;
+    padding: 0.2em 0.5em;
+    background-color: var(--tertiary-low);
+    border-radius: 3px;
+    font-size: 0.85em;
+    color: var(--tertiary);
+
+    .d-icon {
+      font-size: 0.9em;
+    }
+
+    .was-suppressed-text {
+      font-weight: 500;
+    }
+  }
+
+  @media (width <= 767px) {
+    .alert-was-suppressed {
+      .was-suppressed-text {
+        display: none;
+      }
+    }
+  }
 }

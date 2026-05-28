@@ -32,6 +32,7 @@ class AlertReceiverAlert < ActiveRecord::Base
         description=data.description,
         last_suppressed_at = CASE
           WHEN data.status = 'suppressed' THEN CURRENT_TIMESTAMP
+          WHEN data.status = 'resolved' THEN NULL
           ELSE alerts.last_suppressed_at
         END
       FROM (values #{values_string})
@@ -113,7 +114,7 @@ class AlertReceiverAlert < ActiveRecord::Base
         AND db_alerts.starts_at < :stale_threshold
       )
       UPDATE alert_receiver_alerts alerts
-      SET status='stale'
+      SET status='stale', last_suppressed_at=NULL
       FROM stale_alerts
       WHERE stale_alerts.id = alerts.id
       RETURNING alerts.topic_id

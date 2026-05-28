@@ -186,17 +186,51 @@ RSpec.describe AlertReceiverAlert do
       expect(alert_record.last_suppressed_at).to be_present
     end
 
-    it "preserves last_suppressed_at when alert resolves" do
+    it "clears last_suppressed_at when alert resolves" do
       AlertReceiverAlert.update_alerts([alert(identifier: "myid1")])
       AlertReceiverAlert.update_alerts([alert(identifier: "myid1", status: "suppressed")])
 
       alert_record = AlertReceiverAlert.find_by(identifier: "myid1")
-      suppressed_at = alert_record.last_suppressed_at
+      expect(alert_record.last_suppressed_at).to be_present
 
       AlertReceiverAlert.update_alerts([alert(identifier: "myid1", status: "resolved")])
 
       alert_record.reload
-      expect(alert_record.last_suppressed_at).to eq_time(suppressed_at)
+      expect(alert_record.last_suppressed_at).to be_nil
+    end
+
+    it "clears last_suppressed_at when alert goes stale" do
+      AlertReceiverAlert.update_alerts([alert(identifier: "myid1")])
+      AlertReceiverAlert.update_alerts([alert(identifier: "myid1", status: "suppressed")])
+
+      alert_record = AlertReceiverAlert.find_by(identifier: "myid1")
+      expect(alert_record.last_suppressed_at).to be_present
+
+      AlertReceiverAlert.update_alerts(
+        [alert(identifier: "myid2")],
+        mark_stale_external_url: "alerts.dc.example.com",
+      )
+
+      alert_record.reload
+      expect(alert_record.status).to eq("stale")
+      expect(alert_record.last_suppressed_at).to be_nil
+    end
+
+    it "starts a later firing of the same identity with no suppression marker" do
+      # Episode 1: fires, is silenced, then resolves.
+      AlertReceiverAlert.update_alerts([alert(identifier: "myid1")])
+      AlertReceiverAlert.update_alerts([alert(identifier: "myid1", status: "suppressed")])
+      AlertReceiverAlert.update_alerts([alert(identifier: "myid1", status: "resolved")])
+
+      # Episode 2: a brand-new firing of the same alert identity. The partial
+      # unique index only covers firing/suppressed rows, so the resolved row
+      # remains and a fresh row is inserted for the new episode; the new
+      # row must not inherit any suppression marker.
+      AlertReceiverAlert.update_alerts([alert(identifier: "myid1", status: "firing")])
+
+      new_record = AlertReceiverAlert.firing.find_by(identifier: "myid1")
+      expect(new_record).to be_present
+      expect(new_record.last_suppressed_at).to be_nil
     end
 
     it "preserves last_suppressed_at when alert re-fires" do

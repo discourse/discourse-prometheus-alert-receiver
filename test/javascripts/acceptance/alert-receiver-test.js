@@ -4,7 +4,7 @@ import { cloneJSON } from "discourse/lib/object";
 import topicFixtures from "discourse/tests/fixtures/topic";
 import { acceptance, query } from "discourse/tests/helpers/qunit-helpers";
 
-function alertData(status, datacenter, id) {
+function alertData(status, datacenter, id, lastSuppressedAt = null) {
   const data = {
     status,
     identifier: id,
@@ -16,6 +16,7 @@ function alertData(status, datacenter, id) {
       "https://metrics.sjc1.discourse.cloud/graph?g0.expr=mymetric&g0.tab=1",
     link_url:
       "https://logs.sjc1.discourse.cloud/app/kibana#/discover?_g=()&_a=(columns:!(),filters:!((query:(match:(moby.name:(query:mycontainer,type:phrase))))))",
+    last_suppressed_at: lastSuppressedAt,
   };
 
   if (status === "resolved") {
@@ -129,5 +130,51 @@ acceptance(`Alert Receiver`, function (needs) {
       reply.includes("[date=2020-07-27 time=17:26:49"),
       "the alert timestamp uses the local-date bbcode"
     );
+  });
+});
+
+acceptance(`Alert Receiver - previously silenced indicator`, function (needs) {
+  needs.user();
+  needs.settings({ discourse_local_dates_enabled: true });
+
+  const recent = new Date().toISOString();
+
+  needs.pretender((server, helper) => {
+    const json = cloneJSON(topicFixtures["/t/280/1.json"]);
+
+    json.alert_data = [
+      // Firing again after a silence lapsed: badge should show.
+      alertData("firing", "sjc1", "refired", recent),
+      // Currently silenced (shown under "Silenced"): badge must NOT show,
+      // even though last_suppressed_at is recent.
+      alertData("suppressed", "sjc1", "stillsilenced", recent),
+      // Firing but never suppressed: no badge.
+      alertData("firing", "sjc1", "neversilenced"),
+    ];
+
+    server.get("/t/281.json", () => {
+      return helper.response(json);
+    });
+  });
+
+  test("shows the badge only on firing alerts that were recently suppressed", async (assert) => {
+    await visit("/t/internationalization-localization/281");
+
+    assert
+      .dom(
+        ".prometheus-alert-receiver [data-alert-status='firing'] .alert-was-suppressed"
+      )
+      .exists(
+        { count: 1 },
+        "the re-fired alert shows the previously-silenced badge"
+      );
+
+    assert
+      .dom(
+        ".prometheus-alert-receiver [data-alert-status='suppressed'] .alert-was-suppressed"
+      )
+      .doesNotExist(
+        "a currently-silenced alert does not show the previously-silenced badge"
+      );
   });
 });

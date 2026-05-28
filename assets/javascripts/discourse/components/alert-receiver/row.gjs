@@ -26,6 +26,13 @@ export default class AlertReceiverRow extends Component {
     return daysSinceSuppressed <= 90;
   }
 
+  // The badge only makes sense on a currently-firing alert. A suppressed
+  // alert is shown under the "Silenced" group and would otherwise carry a
+  // just-stamped last_suppressed_at; resolved/stale alerts are uninteresting.
+  get showsPreviouslySilencedBadge() {
+    return this.args.alert.status === "firing" && this.wasRecentlySuppressed;
+  }
+
   get suppressedDateFormatted() {
     if (!this.args.alert.last_suppressed_at) {
       return "";
@@ -197,7 +204,7 @@ export default class AlertReceiverRow extends Component {
     <tr>
       <td>
         <a href={{this.generatorUrl}}>{{@alert.identifier}}</a>
-        {{#if this.wasRecentlySuppressed}}
+        {{#if this.showsPreviouslySilencedBadge}}
           <span
             class="alert-was-suppressed"
             title="This alert was previously silenced on {{this.suppressedDateFormatted}}"

@@ -1,4 +1,4 @@
-import { visit } from "@ember/test-helpers";
+import { click, visit } from "@ember/test-helpers";
 import { test } from "qunit";
 import { cloneJSON } from "discourse/lib/object";
 import topicFixtures from "discourse/tests/fixtures/topic";
@@ -103,5 +103,31 @@ acceptance(`Alert Receiver`, function (needs) {
     );
 
     assert.dom(".discourse-local-date").exists("dates are output");
+  });
+
+  test("quote alert button opens composer with the alert as a quote of the first post", async (assert) => {
+    await visit("/t/internationalization-localization/281");
+
+    const quoteButton = query(
+      ".prometheus-alert-receiver [data-alert-status='firing'] table tr td:last-child button.btn-icon"
+    );
+    await click(quoteButton);
+
+    assert.dom(".d-editor-input").exists("composer is opened");
+
+    const reply = query(".d-editor-input").value;
+
+    assert.true(
+      reply.includes("[quote=") && reply.includes("post:1"),
+      `composer is pre-filled with a quote of the first post (got: ${reply})`
+    );
+    assert.true(
+      reply.includes("**myalert5**"),
+      "the alert identifier is rendered in bold markdown"
+    );
+    assert.true(
+      reply.includes("[date=2020-07-27 time=17:26:49"),
+      "the alert timestamp uses the local-date bbcode"
+    );
   });
 });

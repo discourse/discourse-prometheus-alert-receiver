@@ -4,11 +4,15 @@ import { action } from "@ember/object";
 import { service } from "@ember/service";
 import DButton from "discourse/components/d-button";
 import icon from "discourse/helpers/d-icon";
+import { buildQuote } from "discourse/lib/quote";
+import Composer from "discourse/models/composer";
 import { i18n } from "discourse-i18n";
 import DateRange from "./date-range";
 
 export default class AlertReceiverRow extends Component {
   @service siteSettings;
+  @service composer;
+  @service appEvents;
   @controller("topic") topicController;
 
   get wasRecentlySuppressed() {
@@ -148,7 +152,7 @@ export default class AlertReceiverRow extends Component {
   }
 
   @action
-  quoteAlert() {
+  async quoteAlert() {
     const {
       identifier,
       datacenter,
@@ -163,12 +167,30 @@ export default class AlertReceiverRow extends Component {
       alertString += ` - ${description}`;
     }
 
-    this.topicController.quoteState.selected(
-      this.topicController.model.postStream.stream[0],
-      alertString,
-      {}
-    );
-    this.topicController.send("selectText");
+    const topic = this.topicController.model;
+    const postStream = topic.postStream;
+    const firstPostId = postStream.stream[0];
+    const firstPost =
+      postStream.findLoadedPost(firstPostId) ??
+      (await postStream.loadPost(firstPostId));
+
+    if (!firstPost) {
+      return;
+    }
+
+    const quotedText = buildQuote(firstPost, alertString, {});
+
+    if (this.composer.get("model.viewOpen")) {
+      this.appEvents.trigger("composer:insert-block", quotedText);
+    } else {
+      await this.composer.open({
+        action: Composer.REPLY,
+        draftKey: topic.draft_key,
+        draftSequence: topic.draft_sequence,
+        topic,
+        quote: quotedText,
+      });
+    }
   }
 
   <template>
